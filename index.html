@@ -8,7 +8,8 @@
 <style>
 /* ============================================================
    RINGSIDE — a career-progression card game
-   Phase 1: core loop + swipe. All art is CSS + emoji.
+   Phase 2: stats, endings, act gating, flags and story chains.
+   All art is CSS + emoji. No build step, no external assets.
    ============================================================ */
 
 :root{
@@ -300,6 +301,91 @@ footer{
   40%,60%{transform:translateX(7px);}
 }
 
+/* ---------- act change banner ---------- */
+.act-label.bump{animation:bump .9s ease;}
+@keyframes bump{
+  0%{color:var(--gold);transform:scale(1.35);letter-spacing:.3em;}
+  100%{color:var(--dim);transform:none;letter-spacing:.16em;}
+}
+
+/* ---------- end screen ---------- */
+.endscreen{
+  position:absolute;
+  inset:0;
+  z-index:20;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:16px 14px;
+  border-radius:18px;
+  background:
+    radial-gradient(90% 60% at 50% 18%, rgba(201,32,47,.16), transparent 65%),
+    linear-gradient(175deg, #241d2b 0%, #14101a 70%);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 22px 44px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.1);
+  animation:endIn .45s cubic-bezier(.2,1.2,.4,1) both;
+  overflow-y:auto;
+}
+@keyframes endIn{
+  from{opacity:0;transform:translateY(22px) scale(.95);}
+  to{opacity:1;transform:none;}
+}
+.endscreen.win{
+  background:
+    radial-gradient(90% 60% at 50% 18%, rgba(240,194,74,.22), transparent 65%),
+    linear-gradient(175deg, #2c2618 0%, #14101a 70%);
+}
+.end-ico{font-size:52px;line-height:1;margin-bottom:6px;}
+.end-kicker{
+  font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:4px;
+}
+.end-title{
+  font-size:25px;font-weight:900;letter-spacing:.04em;line-height:1.1;
+  color:var(--blood);text-shadow:0 2px 12px rgba(201,32,47,.45);
+  margin-bottom:10px;text-transform:uppercase;
+}
+.endscreen.win .end-title{color:var(--gold);text-shadow:0 2px 14px rgba(240,194,74,.45);}
+.end-text{
+  font-size:14.5px;line-height:1.5;font-weight:600;color:var(--ink);
+  max-width:300px;margin-bottom:14px;
+}
+.end-round{
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:12px;
+}
+.end-round b{color:var(--ink);font-size:13px;}
+.end-stats{
+  width:100%;max-width:290px;display:flex;flex-direction:column;gap:5px;
+  margin-bottom:14px;
+}
+.end-row{display:flex;align-items:center;gap:8px;font-size:11px;}
+.end-row .en{width:16px;text-align:center;font-size:13px;}
+.end-row .et{
+  display:block;flex:1;height:6px;border-radius:99px;
+  background:rgba(0,0,0,.5);overflow:hidden;
+}
+.end-row .ef{display:block;height:100%;border-radius:99px;}
+.end-row .ev{width:26px;text-align:right;font-weight:800;color:var(--ink);}
+.end-row.fail .ev{color:var(--bad);}
+.end-best{
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:14px;
+}
+.end-best b{color:var(--gold);}
+.btn{
+  appearance:none;border:0;cursor:pointer;
+  font-family:inherit;font-weight:900;font-size:13px;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:#fff;padding:13px 30px;border-radius:11px;
+  background:linear-gradient(180deg,var(--blood),var(--blood2));
+  box-shadow:0 6px 0 #5c0d15, 0 12px 22px rgba(0,0,0,.45);
+  transition:transform .1s ease, box-shadow .1s ease;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #5c0d15, 0 6px 12px rgba(0,0,0,.45);}
+
 /* ---------- debug ---------- */
 #debugbar{
   display:none;
@@ -343,7 +429,7 @@ footer{
 
   <footer>
     <div class="swipe-key">&#8592; drag / swipe &#8594;</div>
-    <div class="swipe-key">arrow keys work too</div>
+    <div class="swipe-key" id="bestLine"></div>
   </footer>
 
 </div>
@@ -373,117 +459,524 @@ const STAT_DEFS = [
   { key:"skill",  icon:"🤼", name:"Skill"  }
 ];
 
+
 /* ============================================================
-   CARD DATA  — placeholder deck for phase 1
+   ENDINGS
+   Keys are "<stat>_min" / "<stat>_max", plus the two round-25 outcomes.
+   ============================================================ */
+const ENDINGS = {
+  health_min: {
+    icon:"🦴", kicker:"Your body gave out", title:"Broken Body",
+    text:"Your hip goes in a bingo hall in Rotherham and it does not come back. The boys carry you to the car. Someone posts the clip. You watch it more times than you would like to admit."
+  },
+  fame_min: {
+    icon:"🕳️", kicker:"Nobody called back", title:"Nobody Knows You",
+    text:"You are the guy who wrestled for a bit. You are in the background of other people's photos. The promoter spells your name wrong on the poster and nobody writes in to correct it."
+  },
+  money_min: {
+    icon:"📦", kicker:"The money ran out", title:"Evicted And Broke",
+    text:"Your gear is in a bin bag in your mate's spare room. You did the maths on petrol to a show in Crewe and the maths said no. That was the last one, you just did not know it at the time."
+  },
+  skill_min: {
+    icon:"🤡", kicker:"They saw through you", title:"Exposed In The Ring",
+    text:"Twelve hundred people watch you blow a simple spot and the whole building goes quiet in a way that never fully leaves you. The clip does numbers. You do not."
+  },
+
+  health_max: {
+    icon:"💊", kicker:"You felt no pain at all", title:"Burned Out",
+    text:"You have never felt better and that is the problem. Little blue ones before the match, little white ones after, and a doctor who signs whatever you slide across the desk. You are in perfect condition right up until you are not."
+  },
+  fame_max: {
+    icon:"👹", kicker:"Too big for the room", title:"Fame Monster",
+    text:"Everybody knows your name and not one of them wants you in their locker room. You no-show a spot date because the venue was beneath you. The bookings dry up in a week. The fans take longer."
+  },
+  money_max: {
+    icon:"🛋️", kicker:"You got comfortable", title:"Soft And Complacent",
+    text:"The merch money is very good. Good enough that you stopped taking the bumps that made it. You open a gym. You tell the lads you could still go if you wanted. Everyone nods."
+  },
+  skill_max: {
+    icon:"📐", kicker:"Nobody could follow you", title:"Too Good To Book",
+    text:"Your matches are flawless and nobody can work with you. You correct a veteran in front of the boys. You take the finish apart in the dressing room. They stop asking. Perfect is a lonely gimmick."
+  },
+
+  win: {
+    icon:"🏆", kicker:"Round 25 — you made it", title:"The Big Leagues",
+    text:"Marcy slides the contract across a table in a hotel you could not have afforded last year. Your knee hurts, your phone will not stop, and somewhere a kid is watching your match in a church hall thinking that could be me. You sign it."
+  },
+  tryout_fail: {
+    icon:"🚪", kicker:"Round 25 — the tryout", title:"You Got The Look Around",
+    text:"You get the tryout. You get the tour of the building, the handshake, the photo. Then you get the drive home, and the call that does not come, and a very long time to work out which bit of it you got wrong."
+  }
+};
+
+/* which stat let you down at the tryout, for a sharper closing line */
+const SHORTFALL_LINE = {
+  health:"The medical was the bit that did you in.",
+  fame:"Nobody in the room knew who you were.",
+  money:"You turned up looking like you needed it too badly.",
+  skill:"You got in the ring with their guy and it showed."
+};
+
+/* ============================================================
+   CARD DATA
+   Edit freely — no logic lives in here.
+   `chainOnly: true` means the card is only ever reached via a
+   choice's `next`, never by a random draw.
    ============================================================ */
 const CARDS = [
+
+  /* ---------------- ACT 1 — the indie circuit ---------------- */
   {
-    id:"p-open-hall",
-    character:"Vince the Promoter",
-    portrait:"🎤",
-    text:"Forty people, one of them's your mum. You still want the main event?",
+    id:"a1-open-hall",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Forty people, one of them is your mum. You still want the main event?",
     left:  { text:"Put me on last", effects:{ fame:+6, health:-4 } },
-    right: { text:"Open the show", effects:{ skill:+5, fame:-3 } },
+    right: { text:"Open the show", effects:{ skill:+4, fame:-5 } },
     act:1, weight:1
   },
   {
-    id:"p-trainer-drills",
-    character:"Big Ray, Trainer",
-    portrait:"🧔",
+    id:"a1-trainer-drills",
+    character:"Big Ray, Trainer", portrait:"🧔",
     text:"Another hour of bumps, or do you want to go home and ice that shoulder?",
-    left:  { text:"One more hour", effects:{ skill:+8, health:-7 } },
-    right: { text:"I'm going home", effects:{ health:+6, skill:-4 } },
+    left:  { text:"One more hour", effects:{ skill:+6, health:-8 } },
+    right: { text:"I am going home", effects:{ health:+9, skill:-5 } },
     act:1, weight:1
   },
   {
-    id:"p-merch-shirts",
-    character:"Merch Table Dave",
-    portrait:"👕",
+    id:"a1-merch-shirts",
+    character:"Merch Table Dave", portrait:"👕",
     text:"I can print you fifty shirts. You pay up front, you keep the profit.",
-    left:  { text:"Print 'em", effects:{ money:-12, fame:+9 } },
-    right: { text:"Not yet, Dave", effects:{ money:+2 } },
-    act:1, weight:1
+    left:  { text:"Print them", effects:{ money:-12, fame:+10 }, flags:["has_merch"] },
+    right: { text:"Not yet, Dave", effects:{ money:+4, fame:-3 } },
+    act:1, once:true, weight:1
   },
   {
-    id:"p-rival-tweet",
-    character:"Kyle 'The Crown' Dunn",
-    portrait:"👑",
+    id:"a1-rival-tweet",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
     text:"Posted a clip of your botched dive. Eleven thousand views and counting.",
-    left:  { text:"Fire back online", effects:{ fame:+10, skill:-5 } },
-    right: { text:"Say nothing", effects:{ skill:+6, fame:-6 } },
+    left:  { text:"Fire back online", effects:{ fame:+11, skill:-6 }, flags:["rival_beef"] },
+    right: { text:"Say nothing", effects:{ skill:+5, fame:-9 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-doc-knee",
+    character:"Doc Halloran", portrait:"🩺",
+    text:"That knee is swollen like a grapefruit. I can tape it or I can tell you the truth.",
+    left:  { text:"Tape it, I am on in ten", effects:{ health:-10, fame:+7 } },
+    right: { text:"Tell me the truth", effects:{ health:+12, money:-6 } },
     act:1, weight:1
   },
   {
-    id:"p-doc-knee",
-    character:"Doc Halloran",
-    portrait:"🩺",
-    text:"That knee's swollen like a grapefruit. I can tape it or I can tell you the truth.",
-    left:  { text:"Tape it, I'm on in ten", effects:{ health:-9, fame:+7 } },
-    right: { text:"Tell me the truth", effects:{ health:+8, money:-6 } },
+    id:"a1-partner-anniversary",
+    character:"Sam, Your Partner", portrait:"💛",
+    text:"It is our anniversary and you are booked in a leisure centre in Dudley.",
+    left:  { text:"Cancel the booking", effects:{ health:+10, fame:-13 }, flags:["sam_solid"] },
+    right: { text:"I have to go", effects:{ fame:+6, health:-6 }, flags:["sam_strained"] },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-fan-photo",
+    character:"Smarky Fan", portrait:"👓",
+    text:"Mate, your armdrag has got no snap. Can I get a photo though?",
+    left:  { text:"Sure, pal", effects:{ fame:+5, skill:-3 } },
+    right: { text:"Show me then", effects:{ skill:+6, fame:-5 } },
     act:1, weight:1
   },
   {
-    id:"p-partner-anniversary",
-    character:"Sam, Your Partner",
-    portrait:"💛",
-    text:"It's our anniversary and you're booked in a leisure centre in Dudley.",
-    left:  { text:"Cancel the booking", effects:{ health:+7, fame:-8 } },
-    right: { text:"I have to go", effects:{ fame:+6, health:-5 } },
-    act:1, weight:1
-  },
-  {
-    id:"p-fan-photo",
-    character:"Smarky Fan",
-    portrait:"👓",
-    text:"Mate, your armdrag's got no snap. Can I get a photo though?",
-    left:  { text:"Sure, pal", effects:{ fame:+5, skill:-2 } },
-    right: { text:"Show me then", effects:{ skill:+7, fame:-3 } },
-    act:1, weight:1
-  },
-  {
-    id:"p-podcast-invite",
-    character:"Deano, Podcast Host",
-    portrait:"🎙️",
+    id:"a1-podcast-invite",
+    character:"Deano, Podcast Host", portrait:"🎙️",
     text:"Two hours, no pay, but three thousand people listen. Want the slot?",
-    left:  { text:"I'll do it", effects:{ fame:+9, money:-3 } },
-    right: { text:"Pay me or no", effects:{ money:+4, fame:-7 } },
+    left:  { text:"I will do it", effects:{ fame:+10, money:-3 } },
+    right: { text:"Pay me or no", effects:{ money:+5, fame:-11 } },
     act:1, weight:1
   },
   {
-    id:"p-petrol-money",
-    character:"Vince the Promoter",
-    portrait:"🎤",
+    id:"a1-petrol-money",
+    character:"Vince the Promoter", portrait:"🎤",
     text:"Door was light tonight. I can do petrol money or a spot next month.",
-    left:  { text:"Take the petrol money", effects:{ money:+8, fame:-4 } },
+    left:  { text:"Take the petrol money", effects:{ money:+10, fame:-6 } },
     right: { text:"Take the spot", effects:{ fame:+8, money:-6 } },
     act:1, weight:1
   },
   {
-    id:"p-ring-crew",
-    character:"Big Ray, Trainer",
-    portrait:"🧔",
-    text:"Nobody's set the ring up. Boys who set up the ring get booked again.",
-    left:  { text:"Grab a turnbuckle", effects:{ health:-6, fame:+7 } },
-    right: { text:"I'm a wrestler, not crew", effects:{ health:+4, fame:-8 } },
+    id:"a1-ring-crew",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Nobody has set the ring up. Boys who set up the ring get booked again.",
+    left:  { text:"Grab a turnbuckle", effects:{ health:-7, fame:+7 } },
+    right: { text:"I am a wrestler, not crew", effects:{ health:+6, fame:-13 } },
     act:1, weight:1
   },
   {
-    id:"p-double-shift",
-    character:"Your Day Job",
-    portrait:"📦",
+    id:"a1-double-shift",
+    character:"Your Day Job", portrait:"📦",
     text:"Warehouse wants you on nights. Pays double. Clashes with every show.",
-    left:  { text:"Take the shifts", effects:{ money:+14, skill:-8 } },
-    right: { text:"Wrestling comes first", effects:{ money:-10, skill:+8 } },
+    left:  { text:"Take the shifts", effects:{ money:+18, skill:-10 } },
+    right: { text:"Wrestling comes first", effects:{ money:-10, skill:+6 } },
     act:1, weight:1
   },
   {
-    id:"p-scout-rumour",
-    character:"Marcy the Scout",
-    portrait:"🕶️",
-    text:"I'm in the back row tonight. Don't do anything stupid. Or do. I like stupid.",
-    left:  { text:"Go big", effects:{ fame:+12, health:-11 } },
-    right: { text:"Work it clean", effects:{ skill:+9, fame:-4 } },
+    id:"a1-scout-rumour",
+    character:"Marcy the Scout", portrait:"🕶️",
+    text:"I am in the back row tonight. Do not do anything stupid. Or do. I like stupid.",
+    left:  { text:"Go big", effects:{ fame:+13, health:-12 } },
+    right: { text:"Work it clean", effects:{ skill:+7, fame:-6 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-vince-nephew",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"My nephew debuts Saturday. I need someone to lie down for him. Ninety seconds.",
+    left:  { text:"Not a chance", effects:{ fame:+6, money:-9 }, flags:["burned_vince"] },
+    right: { text:"Ninety seconds it is", effects:{ money:+12, skill:-7 }, flags:["vince_owes"] },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-gym-fees",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Gym fees are due. I can let it slide, but I have let it slide twice.",
+    left:  { text:"Pay him properly", effects:{ money:-11, skill:+6 } },
+    right: { text:"Slide it one more week", effects:{ money:+6, skill:-6 } },
     act:1, weight:1
+  },
+  {
+    id:"a1-church-hall",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Ring is up in a church hall. The vicar has asked for no blood and no swearing.",
+    left:  { text:"Keep it family friendly", effects:{ money:+8, fame:-8 } },
+    right: { text:"Bleed a little", effects:{ fame:+10, health:-9 } },
+    act:1, weight:1
+  },
+
+  /* ---------------- ACT 2 — regional promotions ---------------- */
+  {
+    id:"a2-tour-offer",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Twelve dates in three weeks. It pays. It will also take a year off your life.",
+    left:  { text:"Sign me up", effects:{ money:+24, health:-17 } },
+    right: { text:"Pick my spots", effects:{ health:+13, money:-11, fame:-7 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-rival-promo",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
+    text:"Cut a promo on you in front of six hundred people. Used your real name.",
+    left:  { text:"Answer him in the ring", effects:{ fame:+16, health:-12 }, flags:["rival_beef"], next:"a2-rival-backstage" },
+    right: { text:"Let him have it", effects:{ skill:+6, fame:-18 } },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-rival-backstage",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
+    text:"He is waiting by the curtain. Says if you want a real fight he will give you one.",
+    left:  { text:"Shove him", effects:{ fame:+13, health:-13 }, flags:["rival_shoot"] },
+    right: { text:"Offer a handshake", effects:{ skill:+8, fame:-11 }, flags:["rival_respect"] },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-knee-pop",
+    character:"Your Knee", portrait:"🦵",
+    text:"Something in there popped on the landing and the crowd heard it.",
+    left:  { text:"Finish the match", effects:{ fame:+15, health:-21 }, flags:["bad_knee"], next:"a2-knee-doc" },
+    right: { text:"Call it off", effects:{ health:-6, fame:-20 }, next:"a2-knee-doc" },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-knee-doc",
+    character:"Doc Halloran", portrait:"🩺",
+    text:"Cartilage. Surgery is two grand and three months, or I can just keep taping it.",
+    left:  { text:"Book the surgery", effects:{ money:-23, health:+23 }, flags:["knee_fixed"], next:"a2-knee-back" },
+    right: { text:"Keep taping it", effects:{ health:-10, money:+6 }, flags:["bad_knee"] },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-knee-back",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Three months off. You have come back slower and everybody in the building can see it.",
+    left:  { text:"Rebuild it properly", effects:{ skill:+13, fame:-16 } },
+    right: { text:"Fake it until it is back", effects:{ fame:+10, skill:-14 } },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-agent-offer",
+    character:"Lenny Frayne, Agent", portrait:"🕴️",
+    text:"Sign with me and I will double your bookings. Standard deal. Very standard.",
+    left:  { text:"Sign it", effects:{ money:+22, fame:+10, skill:-8 }, flags:["has_agent"], next:"a2-agent-print" },
+    right: { text:"I will read it first", effects:{ money:-7, skill:+7 } },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-agent-print",
+    character:"Lenny Frayne, Agent", portrait:"🕴️",
+    text:"Small thing. I take a cut of merch too. And bookings I did not get you. It is page four.",
+    left:  { text:"Fight it", effects:{ money:-15, fame:-11 }, flags:["agent_burned"] },
+    right: { text:"Let it go", effects:{ money:-10, fame:+9 }, flags:["agent_owns_me"] },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-pills",
+    character:"A Lad In The Locker Room", portrait:"💊",
+    text:"Take two of these and you will not feel the mat at all tonight. Everyone does it.",
+    left:  { text:"Take them", effects:{ fame:+13, skill:+6, health:-18 }, flags:["on_pills"], next:"a2-pills-again" },
+    right: { text:"I am alright", effects:{ health:+12, fame:-13 } },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-pills-again",
+    character:"A Lad In The Locker Room", portrait:"💊",
+    text:"Same again this week? You worked the best match on the card last time.",
+    left:  { text:"Same again", effects:{ skill:+8, health:-19 }, flags:["pills_habit"] },
+    right: { text:"Never again", effects:{ health:+18, skill:-11, fame:-9 } },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-ray-loyalty",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"A bigger school wants you. I taught you every bump you know. Your call, son.",
+    left:  { text:"I am staying with Ray", effects:{ skill:-8, health:+15 }, flags:["ray_loyal"] },
+    right: { text:"I have to go", effects:{ skill:+12, fame:+7, health:-10 }, flags:["ray_burned"] },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-sam-road",
+    character:"Sam, Your Partner", portrait:"💛",
+    text:"You have been home nine nights this year. I counted. That is the bit that scares me.",
+    left:  { text:"Come off the road a bit", effects:{ health:+20, money:-13, fame:-15 }, flags:["sam_solid"] },
+    right: { text:"This is the year, Sam", effects:{ fame:+12, health:-12 }, flags:["sam_strained"] },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-hardcore",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"Deathmatch spot. Light tubes, thumbtacks, the lot. Pays triple and it will trend.",
+    left:  { text:"Give me the tubes", effects:{ fame:+21, money:+15, health:-25 } },
+    right: { text:"I am not doing that", effects:{ health:+10, money:-10, fame:-13 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-merch-deal",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"Your shirt is outselling the champion's. I want to go bigger. Much bigger.",
+    left:  { text:"Go bigger", effects:{ money:+21, skill:-11 } },
+    right: { text:"Keep it small", effects:{ skill:+6, money:-7 } },
+    act:2, requires:{ flags:["has_merch"] }, once:true, weight:2
+  },
+  {
+    id:"a2-locker-politics",
+    character:"The Veteran", portrait:"🚬",
+    text:"You went into business for yourself out there. That is not how we do it here.",
+    left:  { text:"Apologise properly", effects:{ skill:+8, fame:-13 } },
+    right: { text:"I got the reaction", effects:{ fame:+12, skill:-12 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-seminar",
+    character:"Visiting Japanese Worker", portrait:"🥋",
+    text:"Seminar is two hundred quid. I will show you how to work a match backwards.",
+    left:  { text:"Pay the two hundred", effects:{ money:-15, skill:+14 } },
+    right: { text:"I cannot afford it", effects:{ money:+4, skill:-10 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-podcast-shoot",
+    character:"Deano, Podcast Host", portrait:"🎙️",
+    text:"Give me something spicy. Name a name. Numbers go up, your name goes round.",
+    left:  { text:"Name the name", effects:{ fame:+17, skill:-10, money:-7 }, flags:["burned_a_bridge"] },
+    right: { text:"Keep it clean", effects:{ skill:+5, fame:-11 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-champion-spot",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"I want to put the belt on you. It means being here every Sunday for a year.",
+    left:  { text:"Put it on me", effects:{ fame:+17, skill:+6, health:-14 }, flags:["regional_champ"] },
+    right: { text:"I am aiming higher", effects:{ money:-13, fame:-13, skill:+5 } },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-smark-heckle",
+    character:"Smarky Fan", portrait:"👓",
+    text:"You have got a great look and nothing else. I say that with love. Some love.",
+    left:  { text:"Prove him wrong", effects:{ skill:+10, health:-12 } },
+    right: { text:"Play the heel", effects:{ fame:+11, skill:-8 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-van-crash",
+    character:"The Road", portrait:"🚐",
+    text:"Three hundred miles, one working headlight, and everyone has had four hours sleep.",
+    left:  { text:"You drive", effects:{ health:-16, money:+12 } },
+    right: { text:"Get a hotel", effects:{ money:-14, health:+15 } },
+    act:2, weight:1
+  },
+
+  /* ---------------- ACT 3 — the big leagues are watching ---------------- */
+  {
+    id:"a3-scout-offer",
+    character:"Marcy the Scout", portrait:"🕶️",
+    text:"Developmental contract. It is not much money and it is a long way from home.",
+    left:  { text:"Where do I sign", effects:{ fame:+15, money:-11, health:-7 }, flags:["signed_dev"] },
+    right: { text:"I want more than that", effects:{ money:+12, fame:-19 } },
+    act:3, once:true, weight:2
+  },
+  {
+    id:"a3-rival-shoot",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
+    text:"He is stiffing you on live television. This stopped being a work about a minute ago.",
+    left:  { text:"Shoot back", effects:{ fame:+17, health:-20, skill:-6 } },
+    right: { text:"Work through it", effects:{ skill:+12, health:-11, fame:-8 } },
+    act:3, requires:{ flags:["rival_shoot"] }, once:true, weight:3
+  },
+  {
+    id:"a3-rival-tag",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
+    text:"They want us as a tag team. Us. After everything. I said yes before I asked you.",
+    left:  { text:"Tag with him", effects:{ fame:+13, money:+11, skill:-7 } },
+    right: { text:"I work alone", effects:{ skill:+8, fame:-17 } },
+    act:3, requires:{ flags:["rival_respect"] }, once:true, weight:3
+  },
+  {
+    id:"a3-vince-revenge",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Remember my nephew? He is booking now. He has put Kyle on the big show instead of you.",
+    left:  { text:"Beg for the spot", effects:{ fame:+10, skill:-14 } },
+    right: { text:"Let it go", effects:{ health:+11, fame:-21 } },
+    act:3, requires:{ flags:["burned_vince"] }, once:true, weight:3
+  },
+  {
+    id:"a3-vince-favour",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"I never forgot that ninety seconds. I made a phone call for you. Do not make me look daft.",
+    left:  { text:"Take the shot", effects:{ fame:+15, health:-10 } },
+    right: { text:"I will earn it myself", effects:{ skill:+9, fame:-10 } },
+    act:3, requires:{ flags:["vince_owes"] }, once:true, weight:3
+  },
+  {
+    id:"a3-knee-goes",
+    character:"Your Knee", portrait:"🦵",
+    text:"Tryout match, third minute, and it goes properly this time. You feel it leave.",
+    left:  { text:"Finish the match", effects:{ fame:+14, health:-23 } },
+    right: { text:"Roll out", effects:{ health:-7, fame:-23 } },
+    act:3, requires:{ flags:["bad_knee"], notFlags:["knee_fixed"] }, once:true, weight:3
+  },
+  {
+    id:"a3-knee-holds",
+    character:"Doc Halloran", portrait:"🩺",
+    text:"That knee you paid for? It is the best joint in your body now. Do not waste it.",
+    left:  { text:"Go all out", effects:{ fame:+13, skill:+6, health:-12 } },
+    right: { text:"Protect it", effects:{ health:+14, fame:-12 } },
+    act:3, requires:{ flags:["knee_fixed"] }, once:true, weight:2
+  },
+  {
+    id:"a3-pills-bite",
+    character:"Doc Halloran", portrait:"💊",
+    text:"Your bloods came back. I am not signing you off. You know exactly why.",
+    left:  { text:"Find another doctor", effects:{ fame:+11, health:-18, money:-7 } },
+    right: { text:"Come clean", effects:{ health:+18, fame:-22 } },
+    act:3, requires:{ flags:["pills_habit"] }, once:true, weight:3
+  },
+  {
+    id:"a3-agent-bite",
+    character:"Lenny Frayne, Agent", portrait:"🕴️",
+    text:"Big league offer came through me. My cut is forty percent. Page four, remember.",
+    left:  { text:"Pay the forty", effects:{ money:-18, fame:+14 } },
+    right: { text:"Lawyer up", effects:{ money:-10, fame:-14, skill:+6 } },
+    act:3, requires:{ flags:["agent_owns_me"] }, once:true, weight:3
+  },
+  {
+    id:"a3-ray-corner",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Biggest night of your life and the old man has driven four hours to be in your corner.",
+    left:  { text:"Listen to Ray", effects:{ skill:+10, fame:-8 } },
+    right: { text:"Do it my way", effects:{ fame:+10, skill:-11 } },
+    act:3, requires:{ flags:["ray_loyal"] }, once:true, weight:2
+  },
+  {
+    id:"a3-ray-cold",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Saw you on the telly. Did not recognise the lad wrestling. Good luck to you.",
+    left:  { text:"Try to fix it", effects:{ health:+9, fame:-14 } },
+    right: { text:"He will come round", effects:{ fame:+6, skill:-12 } },
+    act:3, requires:{ flags:["ray_burned"] }, once:true, weight:2
+  },
+  {
+    id:"a3-sam-ultimatum",
+    character:"Sam, Your Partner", portrait:"💛",
+    text:"If you go, I am not doing another year of this. I am not threatening you. I am tired.",
+    left:  { text:"Stay", effects:{ health:+19, fame:-26 } },
+    right: { text:"Go", effects:{ fame:+13, health:-15 }, flags:["sam_gone"] },
+    act:3, requires:{ flags:["sam_strained"] }, once:true, weight:3
+  },
+  {
+    id:"a3-tryout-dark",
+    character:"Marcy the Scout", portrait:"🕶️",
+    text:"Dark match before the big show. Nobody is filming. Everybody who matters is watching.",
+    left:  { text:"Work the safe match", effects:{ skill:+8, fame:-10 } },
+    right: { text:"Steal the show", effects:{ fame:+15, health:-14 } },
+    act:3, once:true, weight:2
+  },
+  {
+    id:"a3-gimmick",
+    character:"Creative Team", portrait:"📋",
+    text:"We love you. We want to repackage you as a singing dentist. It tested well.",
+    left:  { text:"I will do the dentist", effects:{ fame:+14, skill:-13 } },
+    right: { text:"Absolutely not", effects:{ skill:+7, fame:-18 } },
+    act:3, once:true, weight:2
+  },
+  {
+    id:"a3-big-payday",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"Last chance. Stay here, main event every week, more money than they will give you.",
+    left:  { text:"Take the money", effects:{ money:+23, fame:-21 } },
+    right: { text:"I am going up", effects:{ money:-11, fame:+11 } },
+    act:3, once:true, weight:1
+  },
+  {
+    id:"a3-podcast-final",
+    character:"Deano, Podcast Host", portrait:"🎙️",
+    text:"Everyone wants you on now. Funny how that works. One hour, whole audience is theirs.",
+    left:  { text:"Do the rounds", effects:{ fame:+12, health:-9 } },
+    right: { text:"Save it for the ring", effects:{ skill:+8, fame:-12 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-merch-empire",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"They want the shirt rights. All of them. Dave is crying by the folding table.",
+    left:  { text:"Sign the rights over", effects:{ money:+20, fame:+7, skill:-9 } },
+    right: { text:"Keep them with Dave", effects:{ money:-12, skill:+7 } },
+    act:3, requires:{ flags:["has_merch"] }, once:true, weight:2
+  },
+  {
+    id:"a3-medical",
+    character:"Big League Medical", portrait:"🏥",
+    text:"Full physical. They want to know everything you have ever done to yourself.",
+    left:  { text:"Tell the truth", effects:{ health:+15, fame:-15 } },
+    right: { text:"Leave bits out", effects:{ fame:+9, health:-13 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-veteran-advice",
+    character:"The Veteran", portrait:"🚬",
+    text:"Twenty years I did this. Ask me anything. Then buy me a pint, I am skint.",
+    left:  { text:"Ask him everything", effects:{ skill:+9, money:-6 } },
+    right: { text:"I have got this", effects:{ fame:+7, skill:-11 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-smark-turn",
+    character:"Smarky Fan", portrait:"👓",
+    text:"I have followed you since the church halls. Do not become one of their guys.",
+    left:  { text:"I am still me", effects:{ skill:+6, money:-8 } },
+    right: { text:"Times change, pal", effects:{ fame:+9, skill:-9 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-final-call",
+    character:"Marcy the Scout", portrait:"🕶️",
+    text:"Boss wants to meet you Monday. Do not be hurt, do not be broke, do not be a problem.",
+    left:  { text:"Rest all weekend", effects:{ health:+13, fame:-9 } },
+    right: { text:"Work one more show", effects:{ fame:+10, health:-12 } },
+    act:3, weight:1
   }
 ];
 
@@ -513,7 +1006,8 @@ const el = {
   app:       document.getElementById("app"),
   debugbar:  document.getElementById("debugbar"),
   respL:     document.getElementById("respL"),
-  respR:     document.getElementById("respR")
+  respR:     document.getElementById("respR"),
+  bestLine:  document.getElementById("bestLine")
 };
 
 /* ============================================================
@@ -608,6 +1102,7 @@ function meetsRequires(card){
 function eligible(act, avoidRecent){
   return CARDS.filter(function(c){
     if(c.act !== act) return false;
+    if(c.chainOnly) return false;                  // only reachable via `next`
     if(c.once && game.used.has(c.id)) return false;
     if(avoidRecent && game.recent.indexOf(c.id) !== -1) return false;
     return meetsRequires(c);
@@ -624,8 +1119,12 @@ function pickCard(){
   const act = actForRound(game.round).act;
   let pool = eligible(act, true);
   if(!pool.length) pool = eligible(act, false);          // recent filter too tight
-  if(!pool.length) pool = CARDS.filter(function(c){ return c.act === act; });
-  if(!pool.length) pool = CARDS.slice();
+  if(!pool.length){                                      // act exhausted: widen out
+    pool = CARDS.filter(function(c){
+      return !c.chainOnly && !(c.once && game.used.has(c.id)) && meetsRequires(c);
+    });
+  }
+  if(!pool.length) pool = CARDS.filter(function(c){ return !c.chainOnly; });
 
   const total = pool.reduce(function(s,c){ return s + (c.weight || 1); }, 0);
   let roll = Math.random() * total;
@@ -684,7 +1183,12 @@ function nextRound(){
 
   const a = actForRound(game.round);
   el.roundNo.textContent = game.round;
-  el.actLabel.textContent = a.label;
+  if(el.actLabel.textContent !== a.label){
+    el.actLabel.textContent = a.label;
+    el.actLabel.classList.remove("bump");
+    void el.actLabel.offsetWidth;
+    el.actLabel.classList.add("bump");
+  }
 
   if(ghostEl) ghostEl.remove();
   ghostEl = buildCardNode(game.card, true);
@@ -786,21 +1290,120 @@ function commit(side){
   if(choice.flags) choice.flags.forEach(function(f){ game.flags.add(f); });
   if(choice.next) game.forcedNext = choice.next;
 
+  const roundReached = game.round;
+  const blowout = checkEndings();
+
   setTimeout(function(){
     node.remove();
     cardEl = null;
+
+    if(blowout){                                  // a stat hit 0 or 100
+      finish(blowout, roundReached, false);
+      return;
+    }
+
     game.round++;
-    if(game.round > TOTAL_ROUNDS){
-      // phase 2 will put a real ending here
-      el.deck.innerHTML = '<div class="ropes"><i></i><i></i><i></i></div>' +
-        '<div class="card" style="position:relative"><div class="portrait">🏆</div>'+
-        '<div class="char">End of run</div><div class="dialogue">You made it to round 25. '+
-        'Endings land in phase 2.</div><div class="hint">refresh to play again</div></div>';
-      game.over = true;
+    if(game.round > TOTAL_ROUNDS){                // survived the full career
+      const short = shortfalls();
+      if(short.length) finish(ENDINGS.tryout_fail, TOTAL_ROUNDS, false, short);
+      else             finish(ENDINGS.win, TOTAL_ROUNDS, true);
       return;
     }
     nextRound();
-  }, 290);
+  }, 320);
+}
+
+/* ============================================================
+   ENDING CHECKS
+   ============================================================ */
+function checkEndings(){
+  for(const s of STAT_DEFS){
+    const v = game.stats[s.key];
+    if(v <= 0) return ENDINGS[s.key + "_min"];
+    if(LOSE_AT_MAX && v >= 100) return ENDINGS[s.key + "_max"];
+  }
+  return null;
+}
+
+/* stats that failed to clear the round-25 threshold */
+function shortfalls(){
+  return STAT_DEFS.filter(function(s){ return game.stats[s.key] < WIN_THRESHOLD; })
+                  .map(function(s){ return s.key; });
+}
+
+/* ============================================================
+   BEST RUN (localStorage)
+   Wrapped: storage throws in private mode and can come back empty.
+   ============================================================ */
+const BEST_KEY = "ringside.best.v1";
+
+function loadBest(){
+  try{
+    const raw = localStorage.getItem(BEST_KEY);
+    if(!raw) return { round:0, wins:0, runs:0 };
+    const b = JSON.parse(raw);
+    return {
+      round: Number(b.round) || 0,
+      wins:  Number(b.wins)  || 0,
+      runs:  Number(b.runs)  || 0
+    };
+  }catch(e){
+    return { round:0, wins:0, runs:0 };
+  }
+}
+function saveBest(b){
+  try{ localStorage.setItem(BEST_KEY, JSON.stringify(b)); }catch(e){}
+}
+
+/* ============================================================
+   END SCREEN
+   ============================================================ */
+function finish(ending, roundReached, won, short){
+  game.over = true;
+  game.busy = true;
+
+  const best = loadBest();
+  best.runs += 1;
+  best.round = Math.max(best.round, roundReached);
+  if(won) best.wins += 1;
+  saveBest(best);
+
+  let body = ending.text;
+  if(short && short.length){
+    body += " " + SHORTFALL_LINE[short[0]];
+  }
+
+  const screen = document.createElement("div");
+  screen.className = "endscreen" + (won ? " win" : "");
+
+  let rows = "";
+  STAT_DEFS.forEach(function(s){
+    const v = Math.round(game.stats[s.key]);
+    const failed = v < WIN_THRESHOLD;
+    rows +=
+      '<div class="end-row'+(failed ? " fail" : "")+'">'+
+        '<span class="en">'+s.icon+'</span>'+
+        '<span class="et"><span class="ef" style="width:'+clamp(v,0,100)+'%;'+
+          'background:var(--'+s.key+')"></span></span>'+
+        '<span class="ev">'+v+'</span>'+
+      '</div>';
+  });
+
+  screen.innerHTML =
+    '<div class="end-ico">'+ending.icon+'</div>'+
+    '<div class="end-kicker">'+ending.kicker+'</div>'+
+    '<div class="end-title">'+ending.title+'</div>'+
+    '<div class="end-text">'+body+'</div>'+
+    '<div class="end-round">Reached round <b>'+roundReached+'</b> of '+TOTAL_ROUNDS+'</div>'+
+    '<div class="end-stats">'+rows+'</div>'+
+    '<div class="end-best">Best run <b>R'+best.round+'</b> &nbsp;·&nbsp; '+
+      best.wins+' signed &nbsp;·&nbsp; '+best.runs+
+      (best.runs === 1 ? ' career' : ' careers')+'</div>'+
+    '<button class="btn" id="again">Run again</button>';
+
+  el.deck.appendChild(screen);
+  screen.querySelector("#again").addEventListener("click", start);
+  renderBestFooter();
 }
 
 /* keyboard */
@@ -833,6 +1436,13 @@ function buildDebug(){
 /* ============================================================
    BOOT
    ============================================================ */
+function renderBestFooter(){
+  const b = loadBest();
+  el.bestLine.textContent = b.runs
+    ? "best R" + b.round + " \u00b7 " + b.wins + " signed"
+    : "arrow keys work too";
+}
+
 function start(){
   game.round = 1;
   game.over = false;
@@ -840,9 +1450,20 @@ function start(){
   game.flags = new Set();
   game.used = new Set();
   game.recent = [];
+  game.forcedNext = null;
+  game.card = null;
   STAT_DEFS.forEach(function(s){ game.stats[s.key] = START_VALUE; });
+
+  // wipe the board: end screen, leftover cards, stale ghost
+  el.deck.querySelectorAll(".endscreen, .card").forEach(function(n){ n.remove(); });
+  cardEl = null;
+  ghostEl = null;
+  el.actLabel.textContent = "";
+  hideResponses();
+
   buildStats();
   renderStats();
+  renderBestFooter();
   buildDebug();
   nextRound();
 }
