@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0c0a0d">
+<title>RINGSIDE</title>
+<style>
+/* ============================================================
+   RINGSIDE — a career-progression card game
+   Phase 1: core loop + swipe. All art is CSS + emoji.
+   ============================================================ */
+
+:root{
+  --bg:#0c0a0d;
+  --bg2:#15111a;
+  --canvas:#2a2430;
+  --ink:#f4efe6;
+  --dim:#9a8f9e;
+  --blood:#c9202f;
+  --blood2:#8c1420;
+  --gold:#f0c24a;
+  --rope:#d8d2c4;
+  --good:#3ddc84;
+  --bad:#ff4d5e;
+  --health:#ff5b6e;
+  --fame:#f0c24a;
+  --money:#4ade80;
+  --skill:#5aa9ff;
+  --card-w:min(88vw, 360px);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+html,body{height:100%;margin:0;}
+
+body{
+  background:
+    radial-gradient(120% 80% at 50% -10%, #241b2b 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 110%, #1b1220 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  overflow:hidden;
+  user-select:none;
+  -webkit-user-select:none;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+
+/* faint spotlight haze over the ring */
+body::after{
+  content:"";
+  position:fixed;inset:0;
+  background:radial-gradient(60% 45% at 50% 38%, rgba(255,240,200,.07), transparent 70%);
+  pointer-events:none;
+}
+
+#app{
+  width:100%;
+  max-width:460px;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  padding:10px 14px 14px;
+  position:relative;
+  z-index:2;
+}
+
+/* ---------- header ---------- */
+header{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  flex:0 0 auto;
+}
+.logo{
+  font-weight:900;
+  font-size:22px;
+  letter-spacing:.22em;
+  color:var(--ink);
+  text-shadow:0 0 12px rgba(201,32,47,.7), 2px 2px 0 var(--blood2);
+}
+.logo span{color:var(--blood);}
+.meta{
+  text-align:right;
+  line-height:1.15;
+}
+.round-no{
+  font-weight:800;
+  font-size:13px;
+  letter-spacing:.08em;
+  color:var(--ink);
+}
+.act-label{
+  font-size:10px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--dim);
+}
+
+/* ---------- stats ---------- */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin:12px 0 6px;
+  flex:0 0 auto;
+}
+.stat{
+  position:relative;
+  text-align:center;
+  padding:6px 2px 5px;
+  border-radius:9px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.stat .ico{font-size:17px;line-height:1;display:block;filter:grayscale(.35) brightness(.85);transition:filter .15s, transform .15s;}
+.stat.armed .ico{filter:none;transform:scale(1.22);}
+.stat.armed{background:rgba(255,255,255,.09);box-shadow:0 0 0 1px rgba(240,194,74,.45), 0 0 14px rgba(240,194,74,.18);}
+.stat .track{
+  height:5px;
+  margin:5px 3px 3px;
+  border-radius:99px;
+  background:rgba(0,0,0,.45);
+  overflow:hidden;
+}
+.stat .fill{
+  height:100%;
+  width:50%;
+  border-radius:99px;
+  transition:width .45s cubic-bezier(.3,1.4,.5,1), background .2s;
+}
+.stat[data-k="health"] .fill{background:linear-gradient(90deg,#8c1420,var(--health));}
+.stat[data-k="fame"]   .fill{background:linear-gradient(90deg,#7a5d10,var(--fame));}
+.stat[data-k="money"]  .fill{background:linear-gradient(90deg,#155f34,var(--money));}
+.stat[data-k="skill"]  .fill{background:linear-gradient(90deg,#183d6b,var(--skill));}
+.stat .num{
+  font-size:10px;
+  font-weight:800;
+  color:var(--dim);
+  letter-spacing:.06em;
+}
+.stat.flash-up{animation:flashUp .5s ease;}
+.stat.flash-dn{animation:flashDn .5s ease;}
+.stat.big .num{font-size:12px;}
+@keyframes flashUp{
+  0%{background:rgba(61,220,132,.55);transform:translateY(-3px) scale(1.06);}
+  100%{background:rgba(255,255,255,.035);transform:none;}
+}
+@keyframes flashDn{
+  0%{background:rgba(255,77,94,.55);transform:translateY(3px) scale(1.06);}
+  100%{background:rgba(255,255,255,.035);transform:none;}
+}
+
+/* ---------- deck ---------- */
+.deck{
+  flex:1 1 auto;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:0;
+}
+
+/* ring ropes behind the card */
+.ropes{position:absolute;inset:0;pointer-events:none;opacity:.5;}
+.ropes i{
+  position:absolute;left:-6%;right:-6%;height:3px;
+  background:linear-gradient(90deg,transparent,var(--rope),transparent);
+  opacity:.16;
+}
+.ropes i:nth-child(1){top:22%;}
+.ropes i:nth-child(2){top:38%;}
+.ropes i:nth-child(3){top:54%;}
+
+.card{
+  position:absolute;
+  width:var(--card-w);
+  height:min(58vh, 420px);
+  border-radius:18px;
+  background:
+    linear-gradient(170deg, #3a3140 0%, #241d2b 55%, #1a1420 100%);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:
+    0 22px 40px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.12);
+  padding:22px 20px 18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  touch-action:none;
+  cursor:grab;
+  will-change:transform;
+  overflow:hidden;
+}
+.card::before{ /* grimy vignette */
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(70% 55% at 50% 22%, rgba(255,235,190,.10), transparent 70%);
+  pointer-events:none;
+}
+.card.dragging{cursor:grabbing;transition:none;}
+.card.settle{transition:transform .32s cubic-bezier(.2,1.5,.45,1);}
+.card.fly{transition:transform .3s ease-in, opacity .3s ease-in;}
+
+/* ghost card peeking underneath */
+.card.ghost{
+  transform:translateY(14px) scale(.94);
+  filter:brightness(.55) saturate(.6);
+  pointer-events:none;
+  box-shadow:0 14px 26px rgba(0,0,0,.5);
+}
+
+.portrait{
+  width:96px;height:96px;flex:0 0 auto;
+  border-radius:50%;
+  display:grid;place-items:center;
+  font-size:48px;
+  background:radial-gradient(circle at 35% 30%, #4b4055, #201926 70%);
+  border:2px solid rgba(240,194,74,.35);
+  box-shadow:0 0 0 6px rgba(0,0,0,.25), 0 8px 18px rgba(0,0,0,.45);
+  margin-bottom:12px;
+}
+.char{
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--gold);
+  font-weight:800;
+  margin-bottom:12px;
+}
+.dialogue{
+  font-size:17px;
+  line-height:1.42;
+  font-weight:600;
+  color:var(--ink);
+  flex:1 1 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 2px;
+}
+.hint{
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.22);
+  flex:0 0 auto;
+}
+
+/* Response text. Lives in the deck, not on the card, so it never rides
+   off-screen when the card travels. One side fades in as you tilt. */
+.resp{
+  position:absolute;
+  top:2px;
+  max-width:70%;
+  font-size:13.5px;
+  font-weight:800;
+  line-height:1.32;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .08s linear;
+  padding:8px 11px;
+  border-radius:10px;
+  background:rgba(10,7,12,.82);
+  box-shadow:0 6px 16px rgba(0,0,0,.5);
+  z-index:5;
+}
+.resp.l{left:2px;text-align:left;color:#ff9aa4;border-left:3px solid var(--blood);}
+.resp.r{right:2px;text-align:right;color:#9fd2ff;border-right:3px solid var(--skill);}
+.resp .arrow{display:block;font-size:10px;letter-spacing:.14em;opacity:.55;color:var(--ink);}
+
+/* ---------- footer ---------- */
+footer{
+  flex:0 0 auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding-top:10px;
+  font-size:10px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--dim);
+}
+.swipe-key{opacity:.6;}
+
+/* ---------- shake ---------- */
+.shake{animation:shake .38s cubic-bezier(.36,.07,.19,.97);}
+.shake-hard{animation:shake .5s cubic-bezier(.36,.07,.19,.97);}
+@keyframes shake{
+  10%,90%{transform:translateX(-2px);}
+  20%,80%{transform:translateX(4px);}
+  30%,50%,70%{transform:translateX(-7px);}
+  40%,60%{transform:translateX(7px);}
+}
+
+/* ---------- debug ---------- */
+#debugbar{
+  display:none;
+  gap:6px;
+  align-items:center;
+  font-size:10px;
+  color:#8be9fd;
+  padding:6px 0 0;
+}
+#debugbar.on{display:flex;flex-wrap:wrap;}
+#debugbar button{
+  background:#1d2733;color:#8be9fd;border:1px solid #31465c;
+  border-radius:6px;font-size:10px;padding:3px 7px;cursor:pointer;
+}
+.debug-deltas{
+  position:absolute;bottom:8px;left:0;right:0;
+  font-size:10px;color:#8be9fd;letter-spacing:.04em;
+  display:flex;justify-content:space-between;padding:0 12px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">RING<span>SIDE</span></div>
+    <div class="meta">
+      <div class="round-no">ROUND <span id="roundNo">1</span>/25</div>
+      <div class="act-label" id="actLabel">Act I — The Indies</div>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+  <div id="debugbar"></div>
+
+  <div class="deck" id="deck">
+    <div class="ropes"><i></i><i></i><i></i></div>
+    <div class="resp l" id="respL"></div>
+    <div class="resp r" id="respR"></div>
+  </div>
+
+  <footer>
+    <div class="swipe-key">&#8592; drag / swipe &#8594;</div>
+    <div class="swipe-key">arrow keys work too</div>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const DEBUG         = false;   // true: show numeric deltas + round jumping
+const LOSE_AT_MAX   = true;    // true: hitting 100 on a stat also ends the run
+const TOTAL_ROUNDS  = 25;
+const WIN_THRESHOLD = 40;      // all four stats must clear this at round 25
+const START_VALUE   = 50;
+
+const ACTS = [
+  { act:1, from:1,  to:8,  label:"Act I — The Indies" },
+  { act:2, from:9,  to:17, label:"Act II — Regionals" },
+  { act:3, from:18, to:25, label:"Act III — The Call-Up" }
+];
+
+const STAT_DEFS = [
+  { key:"health", icon:"❤️", name:"Health" },
+  { key:"fame",   icon:"📣", name:"Fame"   },
+  { key:"money",  icon:"💰", name:"Money"  },
+  { key:"skill",  icon:"🤼", name:"Skill"  }
+];
+
+/* ============================================================
+   CARD DATA  — placeholder deck for phase 1
+   ============================================================ */
+const CARDS = [
+  {
+    id:"p-open-hall",
+    character:"Vince the Promoter",
+    portrait:"🎤",
+    text:"Forty people, one of them's your mum. You still want the main event?",
+    left:  { text:"Put me on last", effects:{ fame:+6, health:-4 } },
+    right: { text:"Open the show", effects:{ skill:+5, fame:-3 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-trainer-drills",
+    character:"Big Ray, Trainer",
+    portrait:"🧔",
+    text:"Another hour of bumps, or do you want to go home and ice that shoulder?",
+    left:  { text:"One more hour", effects:{ skill:+8, health:-7 } },
+    right: { text:"I'm going home", effects:{ health:+6, skill:-4 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-merch-shirts",
+    character:"Merch Table Dave",
+    portrait:"👕",
+    text:"I can print you fifty shirts. You pay up front, you keep the profit.",
+    left:  { text:"Print 'em", effects:{ money:-12, fame:+9 } },
+    right: { text:"Not yet, Dave", effects:{ money:+2 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-rival-tweet",
+    character:"Kyle 'The Crown' Dunn",
+    portrait:"👑",
+    text:"Posted a clip of your botched dive. Eleven thousand views and counting.",
+    left:  { text:"Fire back online", effects:{ fame:+10, skill:-5 } },
+    right: { text:"Say nothing", effects:{ skill:+6, fame:-6 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-doc-knee",
+    character:"Doc Halloran",
+    portrait:"🩺",
+    text:"That knee's swollen like a grapefruit. I can tape it or I can tell you the truth.",
+    left:  { text:"Tape it, I'm on in ten", effects:{ health:-9, fame:+7 } },
+    right: { text:"Tell me the truth", effects:{ health:+8, money:-6 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-partner-anniversary",
+    character:"Sam, Your Partner",
+    portrait:"💛",
+    text:"It's our anniversary and you're booked in a leisure centre in Dudley.",
+    left:  { text:"Cancel the booking", effects:{ health:+7, fame:-8 } },
+    right: { text:"I have to go", effects:{ fame:+6, health:-5 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-fan-photo",
+    character:"Smarky Fan",
+    portrait:"👓",
+    text:"Mate, your armdrag's got no snap. Can I get a photo though?",
+    left:  { text:"Sure, pal", effects:{ fame:+5, skill:-2 } },
+    right: { text:"Show me then", effects:{ skill:+7, fame:-3 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-podcast-invite",
+    character:"Deano, Podcast Host",
+    portrait:"🎙️",
+    text:"Two hours, no pay, but three thousand people listen. Want the slot?",
+    left:  { text:"I'll do it", effects:{ fame:+9, money:-3 } },
+    right: { text:"Pay me or no", effects:{ money:+4, fame:-7 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-petrol-money",
+    character:"Vince the Promoter",
+    portrait:"🎤",
+    text:"Door was light tonight. I can do petrol money or a spot next month.",
+    left:  { text:"Take the petrol money", effects:{ money:+8, fame:-4 } },
+    right: { text:"Take the spot", effects:{ fame:+8, money:-6 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-ring-crew",
+    character:"Big Ray, Trainer",
+    portrait:"🧔",
+    text:"Nobody's set the ring up. Boys who set up the ring get booked again.",
+    left:  { text:"Grab a turnbuckle", effects:{ health:-6, fame:+7 } },
+    right: { text:"I'm a wrestler, not crew", effects:{ health:+4, fame:-8 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-double-shift",
+    character:"Your Day Job",
+    portrait:"📦",
+    text:"Warehouse wants you on nights. Pays double. Clashes with every show.",
+    left:  { text:"Take the shifts", effects:{ money:+14, skill:-8 } },
+    right: { text:"Wrestling comes first", effects:{ money:-10, skill:+8 } },
+    act:1, weight:1
+  },
+  {
+    id:"p-scout-rumour",
+    character:"Marcy the Scout",
+    portrait:"🕶️",
+    text:"I'm in the back row tonight. Don't do anything stupid. Or do. I like stupid.",
+    left:  { text:"Go big", effects:{ fame:+12, health:-11 } },
+    right: { text:"Work it clean", effects:{ skill:+9, fame:-4 } },
+    act:1, weight:1
+  }
+];
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+const game = {
+  round:1,
+  stats:{},
+  flags:new Set(),
+  used:new Set(),      // ids of `once` cards already played
+  recent:[],           // recently drawn ids, to avoid repeats
+  forcedNext:null,     // card id forced by a choice's `next`
+  card:null,
+  over:false,
+  busy:false
+};
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const el = {
+  deck:      document.getElementById("deck"),
+  stats:     document.getElementById("stats"),
+  roundNo:   document.getElementById("roundNo"),
+  actLabel:  document.getElementById("actLabel"),
+  app:       document.getElementById("app"),
+  debugbar:  document.getElementById("debugbar"),
+  respL:     document.getElementById("respL"),
+  respR:     document.getElementById("respR")
+};
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function actForRound(r){
+  for(const a of ACTS){ if(r >= a.from && r <= a.to) return a; }
+  return ACTS[ACTS.length-1];
+}
+function clamp(n,lo,hi){ return Math.max(lo, Math.min(hi, n)); }
+
+/* ============================================================
+   STATS UI
+   ============================================================ */
+function buildStats(){
+  el.stats.innerHTML = "";
+  STAT_DEFS.forEach(function(s){
+    const d = document.createElement("div");
+    d.className = "stat";
+    d.dataset.k = s.key;
+    d.innerHTML =
+      '<span class="ico">'+s.icon+'</span>'+
+      '<div class="track"><div class="fill"></div></div>'+
+      '<div class="num">'+START_VALUE+'</div>';
+    el.stats.appendChild(d);
+  });
+}
+function statEl(key){ return el.stats.querySelector('.stat[data-k="'+key+'"]'); }
+
+function renderStats(){
+  STAT_DEFS.forEach(function(s){
+    const v = game.stats[s.key];
+    const node = statEl(s.key);
+    node.querySelector(".fill").style.width = clamp(v,0,100)+"%";
+    node.querySelector(".num").textContent = Math.round(v);
+  });
+}
+
+/* highlight which stats a pending choice will touch (no numbers) */
+function armStats(effects){
+  STAT_DEFS.forEach(function(s){
+    const node = statEl(s.key);
+    node.classList.toggle("armed", !!(effects && effects[s.key]));
+  });
+}
+function disarmStats(){
+  STAT_DEFS.forEach(function(s){ statEl(s.key).classList.remove("armed"); });
+}
+
+function applyEffects(effects){
+  let biggest = 0;
+  Object.keys(effects || {}).forEach(function(k){
+    if(game.stats[k] === undefined) return;
+    const delta = effects[k];
+    game.stats[k] = clamp(game.stats[k] + delta, 0, 100);
+    biggest = Math.max(biggest, Math.abs(delta));
+    const node = statEl(k);
+    node.classList.remove("flash-up","flash-dn");
+    void node.offsetWidth;                       // restart the animation
+    node.classList.add(delta >= 0 ? "flash-up" : "flash-dn");
+  });
+  renderStats();
+  if(biggest >= 15) shake(true);
+  else if(biggest >= 8) shake(false);
+}
+
+function shake(hard){
+  el.app.classList.remove("shake","shake-hard");
+  void el.app.offsetWidth;
+  el.app.classList.add(hard ? "shake-hard" : "shake");
+  setTimeout(function(){ el.app.classList.remove("shake","shake-hard"); }, 520);
+}
+
+/* ============================================================
+   CARD SELECTION
+   ============================================================ */
+function meetsRequires(card){
+  const r = card.requires;
+  if(!r) return true;
+  if(r.flags    && !r.flags.every(function(f){ return game.flags.has(f); })) return false;
+  if(r.notFlags && r.notFlags.some(function(f){ return game.flags.has(f); })) return false;
+  if(r.stats){
+    for(const k in r.stats){
+      const need = r.stats[k], have = game.stats[k];
+      if(need.min !== undefined && have < need.min) return false;
+      if(need.max !== undefined && have > need.max) return false;
+    }
+  }
+  return true;
+}
+
+function eligible(act, avoidRecent){
+  return CARDS.filter(function(c){
+    if(c.act !== act) return false;
+    if(c.once && game.used.has(c.id)) return false;
+    if(avoidRecent && game.recent.indexOf(c.id) !== -1) return false;
+    return meetsRequires(c);
+  });
+}
+
+function pickCard(){
+  // a choice may force the next card
+  if(game.forcedNext){
+    const forced = CARDS.find(function(c){ return c.id === game.forcedNext; });
+    game.forcedNext = null;
+    if(forced) return forced;
+  }
+  const act = actForRound(game.round).act;
+  let pool = eligible(act, true);
+  if(!pool.length) pool = eligible(act, false);          // recent filter too tight
+  if(!pool.length) pool = CARDS.filter(function(c){ return c.act === act; });
+  if(!pool.length) pool = CARDS.slice();
+
+  const total = pool.reduce(function(s,c){ return s + (c.weight || 1); }, 0);
+  let roll = Math.random() * total;
+  for(const c of pool){
+    roll -= (c.weight || 1);
+    if(roll <= 0) return c;
+  }
+  return pool[pool.length-1];
+}
+
+/* ============================================================
+   CARD RENDERING + SWIPE
+   ============================================================ */
+let cardEl = null, ghostEl = null;
+
+function buildCardNode(card, isGhost){
+  const n = document.createElement("div");
+  n.className = "card" + (isGhost ? " ghost" : "");
+  n.innerHTML =
+    '<div class="portrait">'+card.portrait+'</div>'+
+    '<div class="char">'+card.character+'</div>'+
+    '<div class="dialogue">'+card.text+'</div>'+
+    '<div class="hint">swipe to answer</div>';
+  if(!isGhost){
+    if(DEBUG){
+      const dd = document.createElement("div");
+      dd.className = "debug-deltas";
+      dd.innerHTML = '<span>'+fmtEffects(card.left.effects)+'</span><span>'+fmtEffects(card.right.effects)+'</span>';
+      n.appendChild(dd);
+    }
+  }
+  return n;
+}
+function fmtEffects(e){
+  return Object.keys(e || {}).map(function(k){
+    return k.slice(0,2).toUpperCase() + (e[k] >= 0 ? "+" : "") + e[k];
+  }).join(" ") || "—";
+}
+
+function hideResponses(){
+  el.respL.style.opacity = 0;
+  el.respR.style.opacity = 0;
+}
+
+function nextRound(){
+  game.card = pickCard();
+  if(game.card.once) game.used.add(game.card.id);
+  game.recent.push(game.card.id);
+  if(game.recent.length > 8) game.recent.shift();
+
+  el.respL.innerHTML = '<span class="arrow">\u2190 LEFT</span>';
+  el.respR.innerHTML = '<span class="arrow">RIGHT \u2192</span>';
+  el.respL.append(game.card.left.text);
+  el.respR.append(game.card.right.text);
+  hideResponses();
+
+  const a = actForRound(game.round);
+  el.roundNo.textContent = game.round;
+  el.actLabel.textContent = a.label;
+
+  if(ghostEl) ghostEl.remove();
+  ghostEl = buildCardNode(game.card, true);
+  el.deck.appendChild(ghostEl);
+
+  cardEl = buildCardNode(game.card, false);
+  el.deck.appendChild(cardEl);
+  attachDrag(cardEl);
+
+  // deal-in flourish
+  cardEl.style.transform = "translateY(26px) scale(.93)";
+  cardEl.style.opacity = "0";
+  requestAnimationFrame(function(){
+    cardEl.classList.add("settle");
+    cardEl.style.transition = "transform .3s cubic-bezier(.2,1.3,.4,1), opacity .25s ease";
+    cardEl.style.transform = "translate(0,0) rotate(0deg)";
+    cardEl.style.opacity = "1";
+    setTimeout(function(){
+      if(cardEl){ cardEl.style.transition = ""; cardEl.classList.remove("settle"); }
+      game.busy = false;
+    }, 300);
+  });
+}
+
+const THRESHOLD = 78;   // px of horizontal travel needed to commit
+
+function attachDrag(node){
+  let dragging = false, decided = false, startX = 0, startY = 0, dx = 0, pid = null;
+
+  function setTilt(x){
+    const rot = clamp(x * 0.055, -16, 16);
+    node.style.transform = "translateX("+x+"px) rotate("+rot+"deg)";
+    const t = clamp(Math.abs(x) / THRESHOLD, 0, 1);
+    const leftSide = x < 0;
+    el.respL.style.opacity = leftSide ? t : 0;
+    el.respR.style.opacity = leftSide ? 0 : t;
+    if(Math.abs(x) > 14) armStats(game.card[leftSide ? "left" : "right"].effects);
+    else disarmStats();
+  }
+  function reset(){
+    node.classList.add("settle");
+    node.style.transform = "translateX(0) rotate(0deg)";
+    hideResponses();
+    disarmStats();
+    setTimeout(function(){ if(node) node.classList.remove("settle"); }, 320);
+  }
+
+  node.addEventListener("pointerdown", function(e){
+    if(game.busy || game.over) return;
+    dragging = true; decided = false;
+    startX = e.clientX; startY = e.clientY; dx = 0; pid = e.pointerId;
+    node.setPointerCapture(pid);
+    node.classList.add("dragging");
+  });
+
+  node.addEventListener("pointermove", function(e){
+    if(!dragging) return;
+    const mx = e.clientX - startX, my = e.clientY - startY;
+    if(!decided){
+      if(Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+      decided = true;
+    }
+    dx = mx;
+    setTilt(dx);
+  });
+
+  function end(){
+    if(!dragging) return;
+    dragging = false;
+    node.classList.remove("dragging");
+    if(Math.abs(dx) >= THRESHOLD) commit(dx < 0 ? "left" : "right");
+    else reset();
+  }
+  node.addEventListener("pointerup", end);
+  node.addEventListener("pointercancel", end);
+  node.addEventListener("lostpointercapture", end);
+
+  node._flick = function(dir){
+    setTilt(dir === "left" ? -THRESHOLD : THRESHOLD);
+    setTimeout(function(){ commit(dir); }, 130);
+  };
+}
+
+function commit(side){
+  if(game.busy || game.over) return;
+  game.busy = true;
+
+  const choice = game.card[side];
+  const node = cardEl;
+  const off = side === "left" ? -window.innerWidth : window.innerWidth;
+
+  node.classList.add("fly");
+  node.style.transform = "translateX("+off+"px) rotate("+(side==="left"?-28:28)+"deg)";
+  node.style.opacity = "0";
+
+  hideResponses();
+  disarmStats();
+  applyEffects(choice.effects);
+  if(choice.flags) choice.flags.forEach(function(f){ game.flags.add(f); });
+  if(choice.next) game.forcedNext = choice.next;
+
+  setTimeout(function(){
+    node.remove();
+    cardEl = null;
+    game.round++;
+    if(game.round > TOTAL_ROUNDS){
+      // phase 2 will put a real ending here
+      el.deck.innerHTML = '<div class="ropes"><i></i><i></i><i></i></div>' +
+        '<div class="card" style="position:relative"><div class="portrait">🏆</div>'+
+        '<div class="char">End of run</div><div class="dialogue">You made it to round 25. '+
+        'Endings land in phase 2.</div><div class="hint">refresh to play again</div></div>';
+      game.over = true;
+      return;
+    }
+    nextRound();
+  }, 290);
+}
+
+/* keyboard */
+window.addEventListener("keydown", function(e){
+  if(game.busy || game.over || !cardEl) return;
+  if(e.key === "ArrowLeft"){  e.preventDefault(); cardEl._flick("left");  }
+  if(e.key === "ArrowRight"){ e.preventDefault(); cardEl._flick("right"); }
+});
+
+/* ============================================================
+   DEBUG BAR
+   ============================================================ */
+function buildDebug(){
+  if(!DEBUG) return;
+  el.debugbar.classList.add("on");
+  el.debugbar.innerHTML = '<span>DEBUG</span>';
+  [1,5,9,14,18,22,25].forEach(function(r){
+    const b = document.createElement("button");
+    b.textContent = "R"+r;
+    b.onclick = function(){
+      game.round = r;
+      if(cardEl){ cardEl.remove(); cardEl = null; }
+      game.busy = false;
+      nextRound();
+    };
+    el.debugbar.appendChild(b);
+  });
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+function start(){
+  game.round = 1;
+  game.over = false;
+  game.busy = false;
+  game.flags = new Set();
+  game.used = new Set();
+  game.recent = [];
+  STAT_DEFS.forEach(function(s){ game.stats[s.key] = START_VALUE; });
+  buildStats();
+  renderStats();
+  buildDebug();
+  nextRound();
+}
+start();
+</script>
+</body>
+</html>
