@@ -1,0 +1,9 @@
+# RINGSIDE is a single self-contained HTML file — nothing to build.
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
