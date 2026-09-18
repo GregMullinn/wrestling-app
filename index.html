@@ -8,8 +8,10 @@
 <style>
 /* ============================================================
    RINGSIDE — a career-progression card game
-   Phase 2: stats, endings, act gating, flags and story chains.
+   Swipe left or right to answer. Four stats, 25 rounds, three acts.
    All art is CSS + emoji. No build step, no external assets.
+
+   Tuning lives in the constants below; content lives in CARDS.
    ============================================================ */
 
 :root{
@@ -33,7 +35,7 @@
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 
-html,body{height:100%;margin:0;}
+html,body{height:100%;margin:0;overflow-x:hidden;}
 
 body{
   background:
@@ -46,6 +48,7 @@ body{
   flex-direction:column;
   align-items:center;
   overflow:hidden;
+  overscroll-behavior:none;
   user-select:none;
   -webkit-user-select:none;
   padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
@@ -171,7 +174,7 @@ header{
 /* ring ropes behind the card */
 .ropes{position:absolute;inset:0;pointer-events:none;opacity:.5;}
 .ropes i{
-  position:absolute;left:-6%;right:-6%;height:3px;
+  position:absolute;left:0;right:0;height:3px;
   background:linear-gradient(90deg,transparent,var(--rope),transparent);
   opacity:.16;
 }
@@ -301,6 +304,141 @@ footer{
   40%,60%{transform:translateX(7px);}
 }
 
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+
+/* ---------- progress through the career ---------- */
+.progress{
+  position:relative;
+  height:3px;
+  border-radius:99px;
+  background:rgba(255,255,255,.07);
+  margin:0 0 8px;
+  flex:0 0 auto;
+  overflow:hidden;
+}
+.progress .bar{
+  position:absolute;inset:0 auto 0 0;
+  width:4%;
+  border-radius:99px;
+  background:linear-gradient(90deg,var(--blood),var(--gold));
+  transition:width .45s cubic-bezier(.3,1.2,.5,1);
+}
+.progress .div{
+  position:absolute;top:0;bottom:0;width:1px;
+  background:rgba(0,0,0,.65);
+}
+
+/* ---------- stat danger states ---------- */
+.stat.danger{animation:dangerPulse 1.5s ease-in-out infinite;}
+.stat.peril{animation:perilPulse 1.5s ease-in-out infinite;}
+@keyframes dangerPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,77,94,.25);}
+  50%    {box-shadow:0 0 0 1px rgba(255,77,94,.85), 0 0 16px rgba(255,77,94,.4);}
+}
+@keyframes perilPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(240,194,74,.25);}
+  50%    {box-shadow:0 0 0 1px rgba(240,194,74,.85), 0 0 16px rgba(240,194,74,.4);}
+}
+/* armed beats danger — you are being told what this choice touches */
+.stat.armed{animation:none;}
+
+/* ---------- floating delta pips ---------- */
+.pip{
+  position:absolute;
+  left:0;right:0;
+  top:-2px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.02em;
+  pointer-events:none;
+  animation:pipUp .95s cubic-bezier(.2,.9,.3,1) forwards;
+  text-shadow:0 2px 6px rgba(0,0,0,.8);
+  z-index:8;
+}
+.pip.up{color:var(--good);}
+.pip.dn{color:var(--bad);}
+.pip.big{font-size:15px;}
+@keyframes pipUp{
+  0%  {opacity:0;transform:translateY(6px) scale(.8);}
+  22% {opacity:1;transform:translateY(-4px) scale(1.12);}
+  70% {opacity:1;transform:translateY(-14px) scale(1);}
+  100%{opacity:0;transform:translateY(-24px) scale(.95);}
+}
+
+/* ---------- act intro flourish ---------- */
+.actcard{
+  position:absolute;
+  inset:0;
+  z-index:15;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  pointer-events:none;
+  border-radius:18px;
+  /* an opaque scrim, so the card deals behind it and is revealed as it fades */
+  background:
+    radial-gradient(70% 45% at 50% 50%, rgba(62,44,20,.6), transparent 70%),
+    #0a080d;
+  animation:actFade 1.5s ease forwards;
+}
+.actcard .numeral{
+  font-size:74px;
+  font-weight:900;
+  letter-spacing:.08em;
+  color:var(--gold);
+  text-shadow:0 0 30px rgba(240,194,74,.55), 0 6px 0 rgba(0,0,0,.5);
+  line-height:1;
+}
+.actcard .sub{
+  margin-top:8px;
+  font-size:12px;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--ink);
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+.actcard .blurb{
+  margin-top:6px;
+  font-size:11px;
+  letter-spacing:.06em;
+  color:var(--dim);
+  max-width:250px;
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+}
+@keyframes actFade{
+  0%  {opacity:0;transform:scale(.88);}
+  18% {opacity:1;transform:scale(1);}
+  72% {opacity:1;transform:scale(1);}
+  100%{opacity:0;transform:scale(1.06);}
+}
+
+/* ---------- card commit tint ---------- */
+.card.hit-up::after,
+.card.hit-dn::after{
+  content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;
+  animation:tint .45s ease forwards;
+}
+.card.hit-up::after{background:radial-gradient(circle at 50% 50%, rgba(61,220,132,.4), transparent 70%);}
+.card.hit-dn::after{background:radial-gradient(circle at 50% 50%, rgba(255,77,94,.45), transparent 70%);}
+@keyframes tint{ 0%{opacity:1;} 100%{opacity:0;} }
+
+/* the blank card under the top one is the rest of the deck, not a copy */
+.card.ghost .portrait,
+.card.ghost .char,
+.card.ghost .dialogue,
+.card.ghost .hint{visibility:hidden;}
+
+/* ---------- respect motion preferences ---------- */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.08s !important;}
+  .shake,.shake-hard{animation:none !important;}
+  .stat.danger,.stat.peril{animation:none !important;
+    box-shadow:0 0 0 1px rgba(255,77,94,.7);}
+}
+
 /* ---------- act change banner ---------- */
 .act-label.bump{animation:bump .9s ease;}
 @keyframes bump{
@@ -419,6 +557,8 @@ footer{
   </header>
 
   <div class="stats" id="stats"></div>
+  <div class="progress" id="progress"><div class="bar"></div></div>
+  <div id="live" aria-live="polite" class="sr-only"></div>
   <div id="debugbar"></div>
 
   <div class="deck" id="deck">
@@ -1445,7 +1585,9 @@ const el = {
   debugbar:  document.getElementById("debugbar"),
   respL:     document.getElementById("respL"),
   respR:     document.getElementById("respR"),
-  bestLine:  document.getElementById("bestLine")
+  bestLine:  document.getElementById("bestLine"),
+  progress:  document.getElementById("progress"),
+  live:      document.getElementById("live")
 };
 
 /* ============================================================
@@ -1475,13 +1617,47 @@ function buildStats(){
 }
 function statEl(key){ return el.stats.querySelector('.stat[data-k="'+key+'"]'); }
 
-function renderStats(){
+function renderStats(animate){
   STAT_DEFS.forEach(function(s){
     const v = game.stats[s.key];
     const node = statEl(s.key);
     node.querySelector(".fill").style.width = clamp(v,0,100)+"%";
-    node.querySelector(".num").textContent = Math.round(v);
+    const num = node.querySelector(".num");
+    if(animate) tickNumber(num, Number(num.textContent), Math.round(v));
+    else num.textContent = Math.round(v);
+    // warn when a stat is close to ending the run in either direction
+    node.classList.toggle("danger", v <= 20);
+    node.classList.toggle("peril", LOSE_AT_MAX && v >= 80);
   });
+}
+
+/* count the number up or down rather than snapping it */
+function tickNumber(node, from, to){
+  if(from === to){ node.textContent = to; return; }
+  const dur = 450, t0 = performance.now();
+  if(node._raf) cancelAnimationFrame(node._raf);
+  (function frame(now){
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    node.textContent = Math.round(from + (to - from) * eased);
+    if(p < 1) node._raf = requestAnimationFrame(frame);
+    else { node.textContent = to; node._raf = null; }
+  })(t0);
+}
+
+/* the floating +8 / -12 over a stat */
+function spawnPip(key, delta){
+  const node = statEl(key);
+  const pip = document.createElement("span");
+  pip.className = "pip " + (delta > 0 ? "up" : "dn") + (Math.abs(delta) >= 15 ? " big" : "");
+  pip.textContent = (delta > 0 ? "+" : "") + delta;
+  node.appendChild(pip);
+  setTimeout(function(){ pip.remove(); }, 1000);
+}
+
+/* a short buzz on phones that support it */
+function buzz(ms){
+  try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){}
 }
 
 /* highlight which stats a pending choice will touch (no numbers) */
@@ -1496,20 +1672,42 @@ function disarmStats(){
 }
 
 function applyEffects(effects){
-  let biggest = 0;
+  let biggest = 0, net = 0;
   Object.keys(effects || {}).forEach(function(k){
     if(game.stats[k] === undefined) return;
-    const delta = effects[k];
-    game.stats[k] = clamp(game.stats[k] + delta, 0, 100);
-    biggest = Math.max(biggest, Math.abs(delta));
+    const before = game.stats[k];
+    game.stats[k] = clamp(before + effects[k], 0, 100);
+    const shown = Math.round(game.stats[k] - before);   // what the bar actually moved
+    if(shown === 0) return;
+    biggest = Math.max(biggest, Math.abs(shown));
+    net += shown;
     const node = statEl(k);
     node.classList.remove("flash-up","flash-dn");
     void node.offsetWidth;                       // restart the animation
-    node.classList.add(delta >= 0 ? "flash-up" : "flash-dn");
+    node.classList.add(shown >= 0 ? "flash-up" : "flash-dn");
+    spawnPip(k, shown);
   });
-  renderStats();
-  if(biggest >= 15) shake(true);
-  else if(biggest >= 8) shake(false);
+  renderStats(true);
+  announce(effects);
+
+  if(cardEl){
+    cardEl.classList.remove("hit-up","hit-dn");
+    void cardEl.offsetWidth;
+    cardEl.classList.add(net >= 0 ? "hit-up" : "hit-dn");
+  }
+  if(biggest >= 15){ shake(true);  buzz([25,40,45]); }
+  else if(biggest >= 8){ shake(false); buzz(18); }
+  else buzz(10);
+}
+
+/* screen-reader narration of what a choice cost */
+function announce(effects){
+  const parts = [];
+  STAT_DEFS.forEach(function(s){
+    const d = (effects || {})[s.key];
+    if(d) parts.push(s.name + " " + (d > 0 ? "up " : "down ") + Math.abs(d));
+  });
+  el.live.textContent = parts.length ? parts.join(", ") : "No change";
 }
 
 function shake(hard){
@@ -1621,15 +1819,18 @@ function nextRound(){
 
   const a = actForRound(game.round);
   el.roundNo.textContent = game.round;
+  renderProgress();
   if(el.actLabel.textContent !== a.label){
     el.actLabel.textContent = a.label;
     el.actLabel.classList.remove("bump");
     void el.actLabel.offsetWidth;
     el.actLabel.classList.add("bump");
+    showActIntro(a);
   }
 
   if(ghostEl) ghostEl.remove();
   ghostEl = buildCardNode(game.card, true);
+  ghostEl.setAttribute("aria-hidden","true");
   el.deck.appendChild(ghostEl);
 
   cardEl = buildCardNode(game.card, false);
@@ -1651,15 +1852,54 @@ function nextRound(){
   });
 }
 
-const THRESHOLD = 78;   // px of horizontal travel needed to commit
+/* Act intro flourish. Decorative and pointer-transparent, so the card
+   deals underneath it and nothing waits on the animation. */
+function showActIntro(a){
+  const NUMERALS = { 1:"I", 2:"II", 3:"III" };
+  const BLURB = {
+    1:"Church halls. Forty people. No pay.",
+    2:"Regional promotions. Agents, rivals, real injuries.",
+    3:"The big leagues are watching. Everything comes back."
+  };
+  const n = document.createElement("div");
+  n.className = "actcard";
+  n.setAttribute("aria-hidden","true");
+  n.innerHTML =
+    '<div class="numeral">'+NUMERALS[a.act]+'</div>'+
+    '<div class="sub">'+a.label.replace(/^Act [IV]+ \u2014 /,"")+'</div>'+
+    '<div class="blurb">'+BLURB[a.act]+'</div>';
+  el.deck.appendChild(n);
+  setTimeout(function(){ n.remove(); }, 1500);
+}
+
+function renderProgress(){
+  const bar = el.progress.querySelector(".bar");
+  bar.style.width = (game.round / TOTAL_ROUNDS * 100) + "%";
+  if(!el.progress.querySelector(".div")){          // act dividers, drawn once
+    ACTS.slice(0,-1).forEach(function(a){
+      const d = document.createElement("div");
+      d.className = "div";
+      d.style.left = (a.to / TOTAL_ROUNDS * 100) + "%";
+      el.progress.appendChild(d);
+    });
+  }
+}
+
+/* Commit distance scales with the card so the gesture feels the same on a
+   narrow phone and a wide desktop window. */
+function threshold(){
+  const w = cardEl ? cardEl.offsetWidth : 340;
+  return clamp(w * 0.24, 62, 118);
+}
 
 function attachDrag(node){
   let dragging = false, decided = false, startX = 0, startY = 0, dx = 0, pid = null;
+  let lastX = 0, lastT = 0, vel = 0, flung = false;
 
   function setTilt(x){
     const rot = clamp(x * 0.055, -16, 16);
     node.style.transform = "translateX("+x+"px) rotate("+rot+"deg)";
-    const t = clamp(Math.abs(x) / THRESHOLD, 0, 1);
+    const t = clamp(Math.abs(x) / threshold(), 0, 1);
     const leftSide = x < 0;
     el.respL.style.opacity = leftSide ? t : 0;
     el.respR.style.opacity = leftSide ? 0 : t;
@@ -1678,6 +1918,7 @@ function attachDrag(node){
     if(game.busy || game.over) return;
     dragging = true; decided = false;
     startX = e.clientX; startY = e.clientY; dx = 0; pid = e.pointerId;
+    lastX = e.clientX; lastT = e.timeStamp || performance.now(); vel = 0; flung = false;
     node.setPointerCapture(pid);
     node.classList.add("dragging");
   });
@@ -1690,6 +1931,13 @@ function attachDrag(node){
       decided = true;
     }
     dx = mx;
+    // px/ms, smoothed, so a quick flick counts even if it is a short one
+    const now = e.timeStamp || performance.now();
+    const dt = now - lastT;
+    if(dt > 0){
+      vel = vel * 0.6 + ((e.clientX - lastX) / dt) * 0.4;
+      lastX = e.clientX; lastT = now;
+    }
     setTilt(dx);
   });
 
@@ -1697,7 +1945,9 @@ function attachDrag(node){
     if(!dragging) return;
     dragging = false;
     node.classList.remove("dragging");
-    if(Math.abs(dx) >= THRESHOLD) commit(dx < 0 ? "left" : "right");
+    // a decisive flick in the same direction as the drag commits early
+    flung = Math.abs(vel) > 0.55 && Math.abs(dx) > 26 && Math.sign(vel) === Math.sign(dx);
+    if(Math.abs(dx) >= threshold() || flung) commit(dx < 0 ? "left" : "right");
     else reset();
   }
   node.addEventListener("pointerup", end);
@@ -1705,7 +1955,7 @@ function attachDrag(node){
   node.addEventListener("lostpointercapture", end);
 
   node._flick = function(dir){
-    setTilt(dir === "left" ? -THRESHOLD : THRESHOLD);
+    setTilt(dir === "left" ? -threshold() : threshold());
     setTimeout(function(){ commit(dir); }, 130);
   };
 }
@@ -1837,16 +2087,26 @@ function finish(ending, roundReached, won, short){
     '<div class="end-best">Best run <b>R'+best.round+'</b> &nbsp;·&nbsp; '+
       best.wins+' signed &nbsp;·&nbsp; '+best.runs+
       (best.runs === 1 ? ' career' : ' careers')+'</div>'+
-    '<button class="btn" id="again">Run again</button>';
+    '<button class="btn" id="again" type="button">Run again</button>';
 
   el.deck.appendChild(screen);
-  screen.querySelector("#again").addEventListener("click", start);
+  const again = screen.querySelector("#again");
+  again.addEventListener("click", start);
+  setTimeout(function(){ try{ again.focus(); }catch(e){} }, 500);
+  el.live.textContent = ending.title + ". " + body;
   renderBestFooter();
 }
 
 /* keyboard */
 window.addEventListener("keydown", function(e){
-  if(game.busy || game.over || !cardEl) return;
+  if(game.over){
+    if(e.key === "Enter" || e.key === " "){
+      const b = document.getElementById("again");
+      if(b){ e.preventDefault(); start(); }
+    }
+    return;
+  }
+  if(game.busy || !cardEl) return;
   if(e.key === "ArrowLeft"){  e.preventDefault(); cardEl._flick("left");  }
   if(e.key === "ArrowRight"){ e.preventDefault(); cardEl._flick("right"); }
 });
@@ -1892,8 +2152,8 @@ function start(){
   game.card = null;
   STAT_DEFS.forEach(function(s){ game.stats[s.key] = START_VALUE; });
 
-  // wipe the board: end screen, leftover cards, stale ghost
-  el.deck.querySelectorAll(".endscreen, .card").forEach(function(n){ n.remove(); });
+  // wipe the board: end screen, leftover cards, stale ghost, act flourish
+  el.deck.querySelectorAll(".endscreen, .card, .actcard").forEach(function(n){ n.remove(); });
   cardEl = null;
   ghostEl = null;
   el.actLabel.textContent = "";
@@ -1901,7 +2161,9 @@ function start(){
 
   buildStats();
   renderStats();
+  renderProgress();
   renderBestFooter();
+  el.live.textContent = "";
   buildDebug();
   nextRound();
 }
