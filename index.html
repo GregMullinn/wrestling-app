@@ -732,8 +732,8 @@ const CARDS = [
     id:"a2-ray-loyalty",
     character:"Big Ray, Trainer", portrait:"🧔",
     text:"A bigger school wants you. I taught you every bump you know. Your call, son.",
-    left:  { text:"I am staying with Ray", effects:{ skill:-8, health:+15 }, flags:["ray_loyal"] },
-    right: { text:"I have to go", effects:{ skill:+12, fame:+7, health:-10 }, flags:["ray_burned"] },
+    left:  { text:"I am staying with Ray", effects:{ skill:-8, health:+15 }, flags:["ray_loyal"], next:"a2-ray-after" },
+    right: { text:"I have to go", effects:{ skill:+12, fame:+7, health:-10 }, flags:["ray_burned"], next:"a2-ray-after" },
     act:2, once:true, weight:2
   },
   {
@@ -741,7 +741,7 @@ const CARDS = [
     character:"Sam, Your Partner", portrait:"💛",
     text:"You have been home nine nights this year. I counted. That is the bit that scares me.",
     left:  { text:"Come off the road a bit", effects:{ health:+20, money:-13, fame:-15 }, flags:["sam_solid"] },
-    right: { text:"This is the year, Sam", effects:{ fame:+12, health:-12 }, flags:["sam_strained"] },
+    right: { text:"This is the year, Sam", effects:{ fame:+12, health:-12 }, flags:["sam_strained"], next:"a2-sam-after" },
     act:2, once:true, weight:2
   },
   {
@@ -977,6 +977,444 @@ const CARDS = [
     left:  { text:"Rest all weekend", effects:{ health:+13, fame:-9 } },
     right: { text:"Work one more show", effects:{ fame:+10, health:-12 } },
     act:3, weight:1
+  },
+
+  /* ---------------- ACT 1 — more of the indie circuit ---------------- */
+  {
+    id:"a1-name-change",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Your name is rubbish. I am putting you on the poster as Danny Dynamite.",
+    left:  { text:"I am not Danny Dynamite", effects:{ skill:+6, fame:-7 } },
+    right: { text:"Danny Dynamite it is", effects:{ fame:+8, skill:-5 }, flags:["danny_dynamite"] },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-first-blood",
+    character:"The Veteran", portrait:"🚬",
+    text:"Crowd is flat. A bit of colour would wake them up. I have a blade in my boot.",
+    left:  { text:"Give me the blade", effects:{ fame:+9, health:-9 }, flags:["bladed"] },
+    right: { text:"Not tonight", effects:{ skill:+6, fame:-6 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-mum-front-row",
+    character:"Your Mum", portrait:"👜",
+    text:"I have brought your auntie. She thinks it is real. Do not do the bleeding thing.",
+    left:  { text:"Tone it down", effects:{ health:+7, fame:-6 } },
+    right: { text:"Sorry, Mum", effects:{ fame:+8, health:-7 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-kit-bag",
+    character:"Your Gear Bag", portrait:"🎒",
+    text:"Boots have gone through at the toe and your trunks have been grey since March.",
+    left:  { text:"Buy proper gear", effects:{ money:-11, fame:+7 } },
+    right: { text:"Gaffer tape it", effects:{ money:+5, fame:-6 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-lift-share",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Three of you in a Corsa to Hull. Someone has to pay for the diesel, son.",
+    left:  { text:"I will get it", effects:{ money:-9, skill:+6 } },
+    right: { text:"I am skint", effects:{ money:+6, fame:-7 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-social-media",
+    character:"Your Phone", portrait:"📱",
+    text:"Four hundred followers. A wrestling account has asked if you want a shout out for a tenner.",
+    left:  { text:"Pay the tenner", effects:{ money:-6, fame:+7 } },
+    right: { text:"Post it myself", effects:{ skill:+5, fame:-5 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-green-ref",
+    character:"The Referee", portrait:"👨‍⚖️",
+    text:"First match for me too. Do not do anything clever, I will not know what it is.",
+    left:  { text:"Keep it simple", effects:{ skill:+7, fame:-5 } },
+    right: { text:"He will keep up", effects:{ fame:+8, skill:-7 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-nightshift-sleep",
+    character:"Your Day Job", portrait:"📦",
+    text:"You finished at six, the show is at seven, and you have not slept since Tuesday.",
+    left:  { text:"Wrestle anyway", effects:{ fame:+7, health:-10 } },
+    right: { text:"Pull out of the show", effects:{ health:+8, fame:-8 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-tag-partner",
+    character:"Danny From The Class", portrait:"🤝",
+    text:"Nobody books singles round here. Fancy being a tag team with matching tights?",
+    left:  { text:"Matching tights", effects:{ fame:+7, skill:-5 } },
+    right: { text:"I go it alone", effects:{ skill:+7, fame:-6 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-poster-typo",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Poster has gone to print. They have spelled your name with two Ns. Five hundred copies.",
+    left:  { text:"Reprint them, Vince", effects:{ money:-8, fame:+6 } },
+    right: { text:"Leave it", effects:{ money:+4, fame:-6 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-dave-first-shirt",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"I have done you a design on my laptop. It is a skull. It is mostly a skull.",
+    left:  { text:"I love it, Dave", effects:{ fame:+7, money:-6 }, flags:["dave_loyal"] },
+    right: { text:"That is awful, Dave", effects:{ skill:+5, fame:-6 } },
+    act:1, once:true, weight:1
+  },
+  {
+    id:"a1-open-mic",
+    character:"Deano, Podcast Host", portrait:"🎙️",
+    text:"You can cut a promo, or you can wrestle. Very few of you can do the both.",
+    left:  { text:"Work on the mic", effects:{ fame:+8, skill:-6 } },
+    right: { text:"Work on the wrestling", effects:{ skill:+8, fame:-6 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-seminar-cheap",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Lad from the telly is doing a session Sunday. Thirty quid. He is not very good.",
+    left:  { text:"Go anyway, for the contact", effects:{ money:-7, fame:+7 } },
+    right: { text:"Train with Ray instead", effects:{ skill:+8, fame:-5 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-bingo-hall",
+    character:"The Venue", portrait:"🎱",
+    text:"Ring is up over the bingo numbers. There is a wedding in at nine. You have got forty minutes.",
+    left:  { text:"Cut the match short", effects:{ skill:+6, fame:-6 } },
+    right: { text:"Go long anyway", effects:{ fame:+8, money:-8 } },
+    act:1, weight:1
+  },
+  {
+    id:"a1-heckler",
+    character:"A Bloke With A Pint", portrait:"🍺",
+    text:"He has shouted that it is fake. Eleven times. His mates have stopped finding it funny.",
+    left:  { text:"Work him into the match", effects:{ fame:+8, health:-6 } },
+    right: { text:"Ignore him", effects:{ skill:+6, fame:-5 } },
+    act:1, weight:1
+  },
+
+  /* ---------------- ACT 2 — more regional grind ---------------- */
+  {
+    id:"a2-sam-after",
+    character:"Sam, Your Partner", portrait:"💛",
+    text:"I am not asking you to quit. I am asking you to be somewhere on purpose. Once.",
+    left:  { text:"Book a weekend off", effects:{ health:+13, fame:-11 }, flags:["sam_solid"] },
+    right: { text:"After this run", effects:{ fame:+10, health:-11 }, flags:["sam_strained"] },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-ray-after",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"Whatever you decided, you decided. Now get your elbow up, you are dropping it.",
+    left:  { text:"Do it his way", effects:{ skill:+13, fame:-8 } },
+    right: { text:"I know what I am doing", effects:{ fame:+10, skill:-11 } },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-dave-bootleg",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"Someone is selling knock off versions of your shirt outside. Cheaper. Better, honestly.",
+    left:  { text:"Go and have a word", effects:{ fame:+11, health:-10 }, next:"a2-dave-choice" },
+    right: { text:"Let them sell", effects:{ money:-12, fame:+8 }, next:"a2-dave-choice" },
+    act:2, requires:{ flags:["has_merch"] }, once:true, weight:2
+  },
+  {
+    id:"a2-dave-choice",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"A proper company want to print for you. They do not want me anywhere near it.",
+    left:  { text:"Dave stays", effects:{ money:-13, skill:+9 }, flags:["dave_loyal"] },
+    right: { text:"Sorry, Dave", effects:{ money:+15, fame:+8, health:-9 }, flags:["dave_dumped"] },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-kid-debut",
+    character:"A Kid From The Class", portrait:"🧒",
+    text:"He has watched you since he was twelve. He debuts Friday and he is terrified.",
+    left:  { text:"Walk him through it", effects:{ skill:+11, money:-9 }, next:"a2-kid-train" },
+    right: { text:"He will learn like I did", effects:{ fame:+9, skill:-9 } },
+    act:2, once:true, weight:2
+  },
+  {
+    id:"a2-kid-train",
+    character:"A Kid From The Class", portrait:"🧒",
+    text:"He wants to travel with you. It is another body in the car and another mouth at the services.",
+    left:  { text:"Get in", effects:{ money:-11, skill:+12 }, flags:["trained_kid"] },
+    right: { text:"Make your own way", effects:{ money:+9, fame:-10 } },
+    act:2, chainOnly:true, once:true
+  },
+  {
+    id:"a2-tv-taping",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"We are filming for the streaming service. It goes out forever. So does a botch.",
+    left:  { text:"Play it safe", effects:{ skill:+10, fame:-9 } },
+    right: { text:"Do the dive", effects:{ fame:+15, health:-14 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-no-show",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"Main event has not turned up. Six hundred people. You are the only one who can go on.",
+    left:  { text:"I will go on", effects:{ fame:+14, health:-12 } },
+    right: { text:"Not on twenty minutes notice", effects:{ health:+8, fame:-13 }, flags:["burned_vince"] },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-concussion",
+    character:"Doc Halloran", portrait:"🩺",
+    text:"You do not know what town you are in. I am not letting you finish. Argue if you like.",
+    left:  { text:"I am finishing", effects:{ fame:+12, health:-18 } },
+    right: { text:"Pull me out", effects:{ health:+11, fame:-12 } },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-gimmick-change",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"The serious thing is not working. We want you in facepaint doing a bin man gimmick.",
+    left:  { text:"Give me the bin", effects:{ fame:+13, skill:-11 } },
+    right: { text:"I would rather not", effects:{ skill:+9, money:-12 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-tag-title",
+    character:"Danny From The Class", portrait:"🤝",
+    text:"Tag belts are there for us. You would have to carry me a bit. Alright, a lot.",
+    left:  { text:"Carry him", effects:{ fame:+12, skill:-8, health:-8 } },
+    right: { text:"Chase singles", effects:{ skill:+11, fame:-11 } },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-booker-drink",
+    character:"The Booker", portrait:"🥃",
+    text:"Come for a drink after. That is where the cards get made, not in the ring.",
+    left:  { text:"Go for the drink", effects:{ fame:+12, health:-11 } },
+    right: { text:"Go home and sleep", effects:{ health:+10, fame:-11 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-convention",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"Signing table at a convention. Fifty quid for the table. You might make nothing.",
+    left:  { text:"Take the table", effects:{ money:-11, fame:+12 } },
+    right: { text:"Not worth it", effects:{ money:+7, fame:-9 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-foreign-tour",
+    character:"Regional Promoter", portrait:"✈️",
+    text:"Two weeks in Germany. The money is poor and the halls are cold and you will learn more than a year here.",
+    left:  { text:"Go to Germany", effects:{ skill:+14, money:-13, health:-8 } },
+    right: { text:"Stay home", effects:{ money:+10, skill:-10 } },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-ref-bump",
+    character:"The Referee", portrait:"👨‍⚖️",
+    text:"You caught me proper with that boot. I am seeing two of you and one of you is losing.",
+    left:  { text:"Carry the finish yourself", effects:{ skill:+12, health:-9 } },
+    right: { text:"Call it in the ring", effects:{ fame:+9, skill:-9 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-rent-due",
+    character:"Your Landlord", portrait:"🏚️",
+    text:"Rent was due Tuesday. I do not care about your wrestling. I care about Tuesday.",
+    left:  { text:"Take every booking going", effects:{ money:+14, health:-13 } },
+    right: { text:"Borrow from Ray", effects:{ money:+8, fame:-10 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-smaller-show",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"I know you are too big for my hall now. Come back for one. For me.",
+    left:  { text:"Do the favour", effects:{ money:-10, skill:+10 }, flags:["vince_owes"] },
+    right: { text:"Those days are done", effects:{ fame:+10, money:-9 }, flags:["burned_vince"] },
+    act:2, once:true, weight:1
+  },
+  {
+    id:"a2-indie-darling",
+    character:"Smarky Fan", portrait:"👓",
+    text:"You are the best kept secret in the country. Please stay a secret. For us.",
+    left:  { text:"Stay underground", effects:{ skill:+11, fame:-12 } },
+    right: { text:"I want the whole thing", effects:{ fame:+12, skill:-9 } },
+    act:2, weight:1
+  },
+  {
+    id:"a2-old-injury",
+    character:"Your Shoulder", portrait:"🦴",
+    text:"It has been clicking since March. Tonight it clicked and then it did something new.",
+    left:  { text:"Work around it", effects:{ skill:+10, health:-11 } },
+    right: { text:"Take a month off", effects:{ health:+12, fame:-13 } },
+    act:2, weight:1
+  },
+
+  /* ---------------- ACT 3 — everything comes back ---------------- */
+  {
+    id:"a3-ray-ill",
+    character:"Big Ray, Trainer", portrait:"🧔",
+    text:"He is in Wythenshawe General and he is pretending it is nothing. It is not nothing.",
+    left:  { text:"Sit with him", effects:{ health:+12, fame:-13 } },
+    right: { text:"Send flowers, take the booking", effects:{ fame:+12, health:-12 } },
+    act:3, requires:{ flags:["ray_loyal"] }, once:true, weight:2
+  },
+  {
+    id:"a3-sam-gone",
+    character:"An Empty Flat", portrait:"🔑",
+    text:"Sam left the key on the side. The flat is very tidy and very quiet.",
+    left:  { text:"Throw yourself into work", effects:{ fame:+13, health:-14 } },
+    right: { text:"Try to put it right", effects:{ health:+12, fame:-14 } },
+    act:3, requires:{ flags:["sam_gone"] }, once:true, weight:3
+  },
+  {
+    id:"a3-kid-passes",
+    character:"A Kid From The Class", portrait:"🧒",
+    text:"They have signed him. Before you. He rang to tell you himself, which took some doing.",
+    left:  { text:"Tell him you are proud", effects:{ health:+11, skill:+9 } },
+    right: { text:"Take it personally", effects:{ fame:+11, health:-13 } },
+    act:3, requires:{ flags:["trained_kid"] }, once:true, weight:3
+  },
+  {
+    id:"a3-kid-vouches",
+    character:"Marcy the Scout", portrait:"🕶️",
+    text:"Your lad would not shut up about you in his meeting. That is the only reason I am here.",
+    left:  { text:"Take the meeting", effects:{ fame:+14, skill:+8 } },
+    right: { text:"I want it on my own", effects:{ skill:+11, fame:-12 } },
+    act:3, requires:{ flags:["trained_kid"] }, once:true, weight:2
+  },
+  {
+    id:"a3-podcast-backfire",
+    character:"Deano, Podcast Host", portrait:"🎙️",
+    text:"That name you gave me? He is on the big league writing team now. He remembers.",
+    left:  { text:"Apologise publicly", effects:{ fame:-12, skill:+11 } },
+    right: { text:"Double down", effects:{ fame:+12, money:-15 } },
+    act:3, requires:{ flags:["burned_a_bridge"] }, once:true, weight:3
+  },
+  {
+    id:"a3-dave-ticket",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"I have got a ticket for the big show. Row nineteen. I paid for it myself, like.",
+    left:  { text:"Get him backstage", effects:{ health:+11, money:-11 } },
+    right: { text:"Row nineteen is a good seat", effects:{ money:+9, health:-11 } },
+    act:3, requires:{ flags:["dave_loyal"] }, once:true, weight:2
+  },
+  {
+    id:"a3-dave-cold",
+    character:"Merch Table Dave", portrait:"👕",
+    text:"Saw your new shirts. Very clean. Very professional. Good for you, honestly.",
+    left:  { text:"Try to make it right", effects:{ money:-13, health:+10 } },
+    right: { text:"It was business", effects:{ money:+11, health:-12 } },
+    act:3, requires:{ flags:["dave_dumped"] }, once:true, weight:2
+  },
+  {
+    id:"a3-danny-name",
+    character:"Creative Team", portrait:"📋",
+    text:"We have looked you up. You were Danny Dynamite. We would like Danny Dynamite back.",
+    left:  { text:"Danny is dead", effects:{ skill:+11, fame:-13 } },
+    right: { text:"Danny lives", effects:{ fame:+14, skill:-11 } },
+    act:3, requires:{ flags:["danny_dynamite"] }, once:true, weight:2
+  },
+  {
+    id:"a3-contract-clause",
+    character:"A Lawyer", portrait:"📄",
+    text:"Clause nine says they own the name, the gear and the face paint. Standard, apparently.",
+    left:  { text:"Sign it anyway", effects:{ fame:+14, skill:-12 } },
+    right: { text:"Negotiate", effects:{ money:-13, skill:+12 } },
+    act:3, once:true, weight:1
+  },
+  {
+    id:"a3-tv-debut",
+    character:"The Gorilla Position", portrait:"🎬",
+    text:"Your music hits in nine seconds. Everyone you have ever met is watching this.",
+    left:  { text:"Do the thing you practised", effects:{ skill:+13, fame:-8 } },
+    right: { text:"Improvise", effects:{ fame:+15, skill:-13 } },
+    act:3, once:true, weight:2
+  },
+  {
+    id:"a3-injury-angle",
+    character:"Creative Team", portrait:"📋",
+    text:"We want to write your knee into the story. Means working hurt on purpose, on camera.",
+    left:  { text:"Use the real injury", effects:{ fame:+15, health:-16 } },
+    right: { text:"Keep it a work", effects:{ health:+10, fame:-11 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-social-storm",
+    character:"Your Phone", portrait:"📱",
+    text:"Something you posted in the church hall days has resurfaced. It is doing numbers.",
+    left:  { text:"Delete and apologise", effects:{ fame:-13, money:+9 } },
+    right: { text:"Ride it out", effects:{ fame:+13, money:-14 } },
+    act:3, once:true, weight:1
+  },
+  {
+    id:"a3-hometown",
+    character:"Vince the Promoter", portrait:"🎤",
+    text:"One night only, back in the hall where you started. Four hundred and it is sold out.",
+    left:  { text:"Go home and do it", effects:{ health:+11, money:-12 } },
+    right: { text:"I cannot risk it now", effects:{ money:+10, fame:-12 } },
+    act:3, once:true, weight:1
+  },
+  {
+    id:"a3-title-shot",
+    character:"Regional Promoter", portrait:"🪑",
+    text:"Drop the belt on the way out or keep it and make me look daft. Your call.",
+    left:  { text:"Do the honours", effects:{ skill:+12, fame:-10 } },
+    right: { text:"Keep the belt", effects:{ fame:+12, money:-13 } },
+    act:3, requires:{ flags:["regional_champ"] }, once:true, weight:2
+  },
+  {
+    id:"a3-press",
+    character:"A Journalist", portrait:"🗞️",
+    text:"So after fifteen years of nothing, what makes you think you belong here?",
+    left:  { text:"Be honest", effects:{ health:+10, fame:-9 } },
+    right: { text:"Be the character", effects:{ fame:+12, skill:-10 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-doubt",
+    character:"Three In The Morning", portrait:"🌙",
+    text:"You are awake again working out whether you gave up a normal life for a folding chair.",
+    left:  { text:"Get up and train", effects:{ skill:+11, health:-11 } },
+    right: { text:"Try to sleep", effects:{ health:+11, skill:-9 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-last-indie",
+    character:"The Boys", portrait:"🚐",
+    text:"Last indie date before you go up. Everyone wants a piece and nobody is protecting you.",
+    left:  { text:"Give them a match", effects:{ fame:+13, health:-15 } },
+    right: { text:"Keep it light", effects:{ health:+9, fame:-11 } },
+    act:3, once:true, weight:1
+  },
+  {
+    id:"a3-veteran-warning",
+    character:"The Veteran", portrait:"🚬",
+    text:"I had this exact fortnight in nineteen ninety four. Ask me how it went. Go on.",
+    left:  { text:"Ask him", effects:{ skill:+12, fame:-9 } },
+    right: { text:"Times are different", effects:{ fame:+10, skill:-11 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-house-show",
+    character:"Big League Road Agent", portrait:"📋",
+    text:"Nobody is watching this one. Which is exactly when they find out who you are.",
+    left:  { text:"Work it like a main event", effects:{ skill:+13, health:-12 } },
+    right: { text:"Coast it", effects:{ health:+9, skill:-12 } },
+    act:3, weight:1
+  },
+  {
+    id:"a3-old-rival-hurt",
+    character:"Kyle 'The Crown' Dunn", portrait:"👑",
+    text:"He is done. Neck. He is asking you to take the spot he cannot take any more.",
+    left:  { text:"Take it for him", effects:{ fame:+13, health:-12 } },
+    right: { text:"He should have it", effects:{ health:+10, fame:-13 } },
+    act:3, requires:{ flags:["rival_respect"] }, once:true, weight:2
   }
 ];
 
